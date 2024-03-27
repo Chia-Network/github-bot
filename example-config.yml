@@ -1,0 +1,10 @@
+github_token: ghp_abc123
+
+# Shared Settings
+# Team that contains all "internal" members
+internal_team: "my-org/my-team"
+
+# Repos to check for labeling
+label_check_repos:
+  - "my-org/repo1"
+  - "my-org/repo2"
