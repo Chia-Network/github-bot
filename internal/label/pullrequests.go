@@ -61,6 +61,7 @@ func PullRequests(githubClient *github.Client, internalTeam string, cfg config.L
 			},
 		}
 		for {
+			lowestNumber := 0
 			opts.ListOptions.Page++
 			pullRequests, resp, err := githubClient.PullRequests.List(context.TODO(), parts[0], parts[1], opts)
 			if err != nil {
@@ -68,6 +69,11 @@ func PullRequests(githubClient *github.Client, internalTeam string, cfg config.L
 			}
 
 			for _, pullRequest := range pullRequests {
+				lowestNumber = *pullRequest.Number
+				if *pullRequest.Number < cfg.LabelMinimumNumber {
+					// Break, not continue, since our order ensures PR numbers are getting smaller
+					break
+				}
 				if *pullRequest.Draft {
 					continue
 				}
@@ -77,15 +83,17 @@ func PullRequests(githubClient *github.Client, internalTeam string, cfg config.L
 				}
 				var label string
 				if teamMembers[user] {
-					label = "internal"
+					label = cfg.LabelInternal
 				} else {
-					label = "community"
+					label = cfg.LabelExternal
 				}
 
-				log.Printf("Pull Request %d by %s will be labelled %s\n", *pullRequest.Number, user, label)
+				if label != "" {
+					log.Printf("Pull Request %d by %s will be labelled %s\n", *pullRequest.Number, user, label)
+				}
 			}
 
-			if resp.NextPage == 0 {
+			if resp.NextPage == 0 || lowestNumber <= cfg.LabelMinimumNumber {
 				break
 			}
 		}

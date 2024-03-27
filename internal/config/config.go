@@ -9,9 +9,11 @@ type Config struct {
 
 // LabelConfig is the configuration options specific to labeling PRs
 type LabelConfig struct {
-	LabelInternal   string   `yaml:"label_internal"`
-	LabelExternal   string   `yaml:"label_external"`
-	LabelCheckRepos []string `yaml:"label_check_repos"`
-	LabelSkipUsers  []string `yaml:"label_skip_users"`
-	LabelSkipMap    map[string]bool
+	LabelInternal      string   `yaml:"label_internal"`
+	LabelExternal      string   `yaml:"label_external"`
+	LabelCheckRepos    []string `yaml:"label_check_repos"`
+	LabelSkipUsers     []string `yaml:"label_skip_users"`
+	LabelMinimumNumber int      `yaml:"label_minimum_number"`
+
+	LabelSkipMap map[string]bool
 }
