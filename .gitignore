@@ -2,3 +2,4 @@ main
 bin/
 .idea/*
 *.log
+config.yml
