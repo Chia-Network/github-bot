@@ -8,3 +8,5 @@ internal_team: "my-org/my-team"
 label_check_repos:
   - "my-org/repo1"
   - "my-org/repo2"
+label_skip_users:
+  - "dependabot[bot]"

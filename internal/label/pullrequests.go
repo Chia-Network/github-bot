@@ -11,7 +11,7 @@ import (
 
 // PullRequests applies internal or community labels to pull requests
 // Internal is determined by checking if the PR author is a member of the specified internalTeam
-func PullRequests(githubClient *github.Client, internalTeam string, repos []string) error {
+func PullRequests(githubClient *github.Client, internalTeam string, repos []string, skipUsers map[string]bool) error {
 	teamMembers := map[string]bool{}
 
 	teamParts := strings.Split(internalTeam, "/")
@@ -70,6 +70,9 @@ func PullRequests(githubClient *github.Client, internalTeam string, repos []stri
 					continue
 				}
 				user := *pullRequest.User.Login
+				if skipUsers[user] {
+					continue
+				}
 				var label string
 				if teamMembers[user] {
 					label = "internal"
