@@ -7,11 +7,13 @@ import (
 	"strings"
 
 	"github.com/google/go-github/v60/github"
+
+	"github.com/chia-network/github-bot/internal/config"
 )
 
 // PullRequests applies internal or community labels to pull requests
 // Internal is determined by checking if the PR author is a member of the specified internalTeam
-func PullRequests(githubClient *github.Client, internalTeam string, repos []string, skipUsers map[string]bool) error {
+func PullRequests(githubClient *github.Client, internalTeam string, cfg config.LabelConfig) error {
 	teamMembers := map[string]bool{}
 
 	teamParts := strings.Split(internalTeam, "/")
@@ -43,7 +45,7 @@ func PullRequests(githubClient *github.Client, internalTeam string, repos []stri
 		}
 	}
 
-	for _, repo := range repos {
+	for _, repo := range cfg.LabelCheckRepos {
 		log.Println("checking repos")
 		parts := strings.Split(repo, "/")
 		if len(parts) != 2 {
@@ -70,7 +72,7 @@ func PullRequests(githubClient *github.Client, internalTeam string, repos []stri
 					continue
 				}
 				user := *pullRequest.User.Login
-				if skipUsers[user] {
+				if cfg.LabelSkipMap[user] {
 					continue
 				}
 				var label string

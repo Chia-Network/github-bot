@@ -21,7 +21,7 @@ var labelPRsCmd = &cobra.Command{
 			log.Fatalf("error loading config: %s\n", err.Error())
 		}
 		client := github.NewClient(nil).WithAuthToken(cfg.GithubToken)
-		err = label.PullRequests(client, "Chia-Network/base_member", []string{"Chia-Network/chia-blockchain"}, cfg.LabelSkipMap)
+		err = label.PullRequests(client, cfg.InternalTeam, cfg.LabelConfig)
 		if err != nil {
 			log.Fatalln(err.Error())
 		}
