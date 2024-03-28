@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"log"
+	"time"
 
 	"github.com/google/go-github/v60/github"
 	"github.com/spf13/cobra"
@@ -21,9 +22,22 @@ var labelPRsCmd = &cobra.Command{
 			log.Fatalf("error loading config: %s\n", err.Error())
 		}
 		client := github.NewClient(nil).WithAuthToken(cfg.GithubToken)
-		err = label.PullRequests(client, cfg.InternalTeam, cfg.LabelConfig)
-		if err != nil {
-			log.Fatalln(err.Error())
+
+		loop := viper.GetBool("loop")
+		loopDuration := viper.GetDuration("loop-time")
+		for {
+			log.Println("Labeling Pull Requests")
+			err = label.PullRequests(client, cfg.InternalTeam, cfg.LabelConfig)
+			if err != nil {
+				log.Fatalln(err.Error())
+			}
+
+			if !loop {
+				break
+			}
+
+			log.Printf("Waiting %s for next iteration\n", loopDuration.String())
+			time.Sleep(loopDuration)
 		}
 	},
 }

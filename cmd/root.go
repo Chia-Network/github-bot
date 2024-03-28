@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"strings"
+	"time"
 
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
@@ -26,12 +27,20 @@ func Execute() {
 }
 
 func init() {
-	var cfgFile string
+	var (
+		cfgFile  string
+		loop     bool
+		loopTime time.Duration
+	)
 
 	cobra.OnInitialize(initConfig)
 	rootCmd.PersistentFlags().StringVar(&cfgFile, "config", "config.yml", "config file to load")
+	rootCmd.PersistentFlags().BoolVar(&loop, "loop", false, "Use this var to periodically check on a loop")
+	rootCmd.PersistentFlags().DurationVar(&loopTime, "loop-time", 1*time.Hour, "The amount of time to wait between each iteration of the loop")
 
 	cobra.CheckErr(viper.BindPFlag("config", rootCmd.PersistentFlags().Lookup("config")))
+	cobra.CheckErr(viper.BindPFlag("loop", rootCmd.PersistentFlags().Lookup("loop")))
+	cobra.CheckErr(viper.BindPFlag("loop-time", rootCmd.PersistentFlags().Lookup("loop-time")))
 }
 
 // initConfig reads in config file and ENV variables if set.
