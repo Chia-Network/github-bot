@@ -4,7 +4,7 @@ package config
 type Config struct {
 	GithubToken  string `yaml:"github_token"`
 	InternalTeam string `yaml:"internal_team"`
-	LabelConfig
+	LabelConfig `yaml:",inline"`
 }
 
 // LabelConfig is the configuration options specific to labeling PRs
