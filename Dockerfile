@@ -8,4 +8,4 @@ FROM gcr.io/distroless/static-debian12
 
 COPY --from=builder /app/bin/github-bot /github-bot
 
-ENTRYPOINT ["/github-bot", "--config", "/config.yml"]
+ENTRYPOINT ["/github-bot", "--config", "/config/config.yml"]

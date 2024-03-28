@@ -10,15 +10,16 @@ deployment:
 
 # Creates a secret with the following values, and mounts as a file into the main deployment container
 secretFile:
-  mountPath: "/config.yml"
+  mountPath: "/config"
   stringValues:
-    github_token: "{{ BOT_GITHUB_TOKEN }}"
-    internal_team: "{{ INTERNAL_TEAM_NAME }}"
-    label_internal: ""
-    label_external: "community-pr"
-    label_check_repos:
-      - name: "Chia-Network/chia-blockchain"
-        minimum_number: 17788
-    label_skip_users:
-      - "dependabot[bot]"
+    config.yml: |
+      github_token: "{{ BOT_GITHUB_TOKEN }}"
+      internal_team: "{{ INTERNAL_TEAM_NAME }}"
+      label_internal: ""
+      label_external: "community-pr"
+      label_check_repos:
+        - name: "Chia-Network/chia-blockchain"
+          minimum_number: 17788
+      label_skip_users:
+        - "dependabot[bot]"
 
