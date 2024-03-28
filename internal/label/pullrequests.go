@@ -45,9 +45,9 @@ func PullRequests(githubClient *github.Client, internalTeam string, cfg config.L
 		}
 	}
 
-	for _, repo := range cfg.LabelCheckRepos {
+	for _, fullRepo := range cfg.LabelCheckRepos {
 		log.Println("checking repos")
-		parts := strings.Split(repo, "/")
+		parts := strings.Split(fullRepo, "/")
 		if len(parts) != 2 {
 			return fmt.Errorf("invalid repository name - must contain owner and repository: %s", repo)
 		}
@@ -63,7 +63,9 @@ func PullRequests(githubClient *github.Client, internalTeam string, cfg config.L
 		for {
 			lowestNumber := 0
 			opts.ListOptions.Page++
-			pullRequests, resp, err := githubClient.PullRequests.List(context.TODO(), parts[0], parts[1], opts)
+			owner := parts[0]
+			repo := parts[1]
+			pullRequests, resp, err := githubClient.PullRequests.List(context.TODO(), owner, repo, opts)
 			if err != nil {
 				return fmt.Errorf("error listing pull requests: %w", err)
 			}
@@ -90,6 +92,25 @@ func PullRequests(githubClient *github.Client, internalTeam string, cfg config.L
 
 				if label != "" {
 					log.Printf("Pull Request %d by %s will be labelled %s\n", *pullRequest.Number, user, label)
+					hasLabel := false
+					for _, existingLabel := range pullRequest.Labels {
+						if *existingLabel.Name == label {
+							log.Println("  Already labeled, skipping...")
+							hasLabel = true
+							break
+						}
+					}
+
+					if !hasLabel {
+						allLabels := []string{label}
+						for _, labelP := range pullRequest.Labels {
+							allLabels = append(allLabels, *labelP.Name)
+						}
+						_, _, err := githubClient.Issues.AddLabelsToIssue(context.TODO(), owner, repo, *pullRequest.Number, allLabels)
+						if err != nil {
+							return fmt.Errorf("error adding labels to pull request %d: %w", *pullRequest.Number, err)
+						}
+					}
 				}
 			}
 
