@@ -91,7 +91,7 @@ func PullRequests(githubClient *github.Client, internalTeam string, cfg config.L
 				}
 
 				if label != "" {
-					log.Printf("Pull Request %d by %s will be labelled %s\n", *pullRequest.Number, user, label)
+					log.Printf("Pull Request %d by %s will be labeled %s\n", *pullRequest.Number, user, label)
 					hasLabel := false
 					for _, existingLabel := range pullRequest.Labels {
 						if *existingLabel.Name == label {
