@@ -10,10 +10,11 @@ label_internal: "internal-pr"
 label_external: "community-pr"
 # Repos to check for labeling
 label_check_repos:
-  - "my-org/repo1"
-  - "my-org/repo2"
+  - name: "my-org/repo1"
+    # Only PRs with a number higher than this value will be labeled
+    minimum_number: 0
+  - name: "my-org/repo2"
+    minimum_number: 1000
 # PRs opened by these users will not be labeled
 label_skip_users:
   - "dependabot[bot]"
-# Only PRs with a number higher than this value will be labeled
-label_minimum_number: 0

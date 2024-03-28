@@ -47,9 +47,9 @@ func PullRequests(githubClient *github.Client, internalTeam string, cfg config.L
 
 	for _, fullRepo := range cfg.LabelCheckRepos {
 		log.Println("checking repos")
-		parts := strings.Split(fullRepo, "/")
+		parts := strings.Split(fullRepo.Name, "/")
 		if len(parts) != 2 {
-			return fmt.Errorf("invalid repository name - must contain owner and repository: %s", repo)
+			return fmt.Errorf("invalid repository name - must contain owner and repository: %s", fullRepo.Name)
 		}
 		opts := &github.PullRequestListOptions{
 			State:     "open",
@@ -72,7 +72,7 @@ func PullRequests(githubClient *github.Client, internalTeam string, cfg config.L
 
 			for _, pullRequest := range pullRequests {
 				lowestNumber = *pullRequest.Number
-				if *pullRequest.Number < cfg.LabelMinimumNumber {
+				if *pullRequest.Number < fullRepo.MinimumNumber {
 					// Break, not continue, since our order ensures PR numbers are getting smaller
 					break
 				}
@@ -114,7 +114,7 @@ func PullRequests(githubClient *github.Client, internalTeam string, cfg config.L
 				}
 			}
 
-			if resp.NextPage == 0 || lowestNumber <= cfg.LabelMinimumNumber {
+			if resp.NextPage == 0 || lowestNumber <= fullRepo.MinimumNumber {
 				break
 			}
 		}
