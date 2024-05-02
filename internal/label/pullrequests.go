@@ -15,37 +15,6 @@ import (
 // PullRequests applies internal or community labels to pull requests
 // Internal is determined by checking if the PR author is a member of the specified internalTeam
 func PullRequests(githubClient *github.Client, internalTeam string, cfg config.LabelConfig) error {
-	teamMembers := map[string]bool{}
-
-	teamParts := strings.Split(internalTeam, "/")
-	if len(teamParts) != 2 {
-		return fmt.Errorf("invalid team name - must contain org and team : %s", internalTeam)
-	}
-
-	teamOpts := &github.TeamListTeamMembersOptions{
-		Role: "all",
-		ListOptions: github.ListOptions{
-			Page:    0,
-			PerPage: 100,
-		},
-	}
-
-	for {
-		teamOpts.ListOptions.Page++
-		members, resp, err := githubClient.Teams.ListTeamMembersBySlug(context.TODO(), teamParts[0], teamParts[1], teamOpts)
-		if err != nil {
-			return fmt.Errorf("error getting team %s: %w", internalTeam, err)
-		}
-
-		for _, member := range members {
-			teamMembers[*member.Login] = true
-		}
-
-		if resp.NextPage == 0 {
-			break
-		}
-	}
-
 	for _, fullRepo := range cfg.LabelCheckRepos {
 		log.Println("checking repos")
 		parts := strings.Split(fullRepo.Name, "/")
@@ -54,6 +23,7 @@ func PullRequests(githubClient *github.Client, internalTeam string, cfg config.L
 		}
 		owner := parts[0]
 		repo := parts[1]
+		teamMembers, _ := github2.GetTeamMemList(githubClient, internalTeam)
 		pullRequests, err := github2.FindCommunityPRs(owner, repo, teamMembers, githubClient)
 		if err != nil {
 			return err

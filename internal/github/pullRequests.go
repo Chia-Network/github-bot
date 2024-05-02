@@ -7,6 +7,7 @@ import (
 	"github.com/google/go-github/v60/github"
 )
 
+// FindCommunityPRs obtains non-teammember PRs
 func FindCommunityPRs(owner string, repo string, teamMembers map[string]bool, githubClient *github.Client) ([]*github.PullRequest, error) {
 	var finalPRs []*github.PullRequest
 	opts := &github.PullRequestListOptions{
