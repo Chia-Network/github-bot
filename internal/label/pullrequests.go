@@ -29,13 +29,9 @@ func PullRequests(githubClient *github.Client, internalTeam string, cfg config.L
 			return err
 		}
 
-		lowestNumber := 0
-
 		for _, pullRequest := range pullRequests {
-			lowestNumber = *pullRequest.Number
 			if *pullRequest.Number < fullRepo.MinimumNumber {
-				// Break, not continue, since our order ensures PR numbers are getting smaller
-				break
+				continue
 			}
 			if *pullRequest.Draft {
 				continue
@@ -73,10 +69,6 @@ func PullRequests(githubClient *github.Client, internalTeam string, cfg config.L
 					}
 				}
 			}
-		}
-
-		if lowestNumber <= fullRepo.MinimumNumber {
-			continue
 		}
 	}
 
