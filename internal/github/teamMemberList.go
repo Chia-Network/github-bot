@@ -8,7 +8,7 @@ import (
 	"github.com/google/go-github/v60/github"
 )
 
-// GetTeamMemList obtains a list of teammembers
+// GetTeamMemberList obtains a list of teammembers
 func GetTeamMemberList(githubClient *github.Client, internalTeam string) (map[string]bool, error) {
 	teamMembers := make(map[string]bool)
 
