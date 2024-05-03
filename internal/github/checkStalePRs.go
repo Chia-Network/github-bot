@@ -12,7 +12,7 @@ import (
 	"github.com/chia-network/github-bot/internal/config"
 )
 
-// CheckstalePRs will return a list of PRs
+// CheckStalePRs will return a list of PR URLs that have not been updated in the last 7 days by internal team members.
 func CheckStalePRs(githubClient *github.Client, internalTeam string, cfg config.LabelConfig) ([]string, error) {
 	var stalePRUrls []string
 	cutoffDate := time.Now().AddDate(0, 0, -7) // 7 days ago
