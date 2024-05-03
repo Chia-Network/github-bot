@@ -12,8 +12,9 @@ import (
 	"github.com/chia-network/github-bot/internal/config"
 )
 
-func CheckStalePRs(githubClient *github.Client, internalTeam string, cfg config.LabelConfig) ([]*github.PullRequest, error) {
-	var stalePRs []*github.PullRequest
+// CheckstalePRs will return a list of PRs
+func CheckStalePRs(githubClient *github.Client, internalTeam string, cfg config.LabelConfig) ([]string, error) {
+	var stalePRUrls []string
 	cutoffDate := time.Now().AddDate(0, 0, -7) // 7 days ago
 	teamMembers, err := GetTeamMemberList(githubClient, internalTeam)
 	if err != nil {
@@ -35,11 +36,11 @@ func CheckStalePRs(githubClient *github.Client, internalTeam string, cfg config.
 
 		for _, pr := range communityPRs {
 			if isStale(githubClient, pr, teamMembers, cutoffDate) {
-				stalePRs = append(stalePRs, pr)
+				stalePRUrls = append(stalePRUrls, pr.GetHTMLURL()) // Collecting URLs instead of PR objects
 			}
 		}
 	}
-	return stalePRs, nil
+	return stalePRUrls, nil
 }
 
 // Checks if a PR is stale based on the last update from team members
