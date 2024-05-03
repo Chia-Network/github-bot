@@ -12,9 +12,9 @@ import (
 	github2 "github.com/chia-network/github-bot/internal/github"
 )
 
-var notifyStaleCmd = &cobra.Command{
-	Use:   "notify-stale",
-	Short: "Sends a Keybase message to a channel, alerting that a community PR has not been updated in 7 days",
+var notifyPendingCICmd = &cobra.Command{
+	Use:   "notify-pendingci",
+	Short: "Sends a Keybase message to a channel, alerting that a community PR is ready for CI to run",
 	Run: func(cmd *cobra.Command, args []string) {
 		cfg, err := config.LoadConfig(viper.GetString("config"))
 		if err != nil {
@@ -25,8 +25,8 @@ var notifyStaleCmd = &cobra.Command{
 		loop := viper.GetBool("loop")
 		loopDuration := viper.GetDuration("loop-time")
 		for {
-			log.Println("Checking for community PRs that have no update in the last 7 days")
-			_, err = github2.CheckStalePRs(client, cfg.InternalTeam, cfg.LabelConfig)
+			log.Println("Checking for community PRs that are waiting for CI to run")
+			_, err = github2.CheckForPendingCI(client, cfg.InternalTeam, cfg.LabelConfig)
 			if err != nil {
 				log.Fatalln(err.Error())
 			}
@@ -42,5 +42,5 @@ var notifyStaleCmd = &cobra.Command{
 }
 
 func init() {
-	rootCmd.AddCommand(notifyStaleCmd)
+	rootCmd.AddCommand(notifyPendingCICmd)
 }

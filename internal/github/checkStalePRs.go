@@ -1,6 +1,7 @@
 package github
 
 import (
+	"context"
 	"fmt"
 	"log"
 	"strings"
@@ -14,6 +15,10 @@ import (
 func CheckStalePRs(githubClient *github.Client, internalTeam string, cfg config.LabelConfig) ([]*github.PullRequest, error) {
 	var stalePRs []*github.PullRequest
 	cutoffDate := time.Now().AddDate(0, 0, -7) // 7 days ago
+	teamMembers, err := GetTeamMemberList(githubClient, internalTeam)
+	if err != nil {
+		return nil, err
+	}
 
 	for _, fullRepo := range cfg.LabelCheckRepos {
 		log.Println("Checking repository:", fullRepo.Name)
@@ -22,10 +27,6 @@ func CheckStalePRs(githubClient *github.Client, internalTeam string, cfg config.
 			return nil, fmt.Errorf("invalid repository name - must contain owner and repository: %s", fullRepo.Name)
 		}
 		owner, repo := parts[0], parts[1]
-		teamMembers, err := GetTeamMemberList(githubClient, internalTeam)
-		if err != nil {
-			return nil, err
-		}
 
 		communityPRs, err := FindCommunityPRs(owner, repo, teamMembers, githubClient)
 		if err != nil {
@@ -33,12 +34,37 @@ func CheckStalePRs(githubClient *github.Client, internalTeam string, cfg config.
 		}
 
 		for _, pr := range communityPRs {
-			if pr.UpdatedAt.Before(cutoffDate) {
+			if isStale(githubClient, pr, teamMembers, cutoffDate) {
 				stalePRs = append(stalePRs, pr)
 			}
 		}
 	}
 	return stalePRs, nil
+}
+
+// Checks if a PR is stale based on the last update from team members
+func isStale(githubClient *github.Client, pr *github.PullRequest, teamMembers map[string]bool, cutoffDate time.Time) bool {
+	// Retrieve the timeline for the PR to find the latest relevant event
+	listOptions := &github.ListOptions{PerPage: 100}
+	for {
+		// Note: As far as the GitHub API is concerned, every pull request is an issue,
+		// but not every issue is a pull request.
+		events, resp, err := githubClient.Issues.ListIssueTimeline(context.TODO(), pr.Base.Repo.Owner.GetLogin(), pr.Base.Repo.GetName(), pr.GetNumber(), listOptions)
+		if err != nil {
+			log.Printf("Failed to get timeline for PR #%d: %v", pr.GetNumber(), err)
+			break // Skip to next PR on error
+		}
+		for _, event := range events {
+			if event.Event != nil && *event.Event == "commented" && teamMembers[*event.Actor.Login] && event.CreatedAt.After(cutoffDate) {
+				return false // PR has been updated by a team member recently
+			}
+		}
+		if resp.NextPage == 0 {
+			break
+		}
+		listOptions.Page = resp.NextPage
+	}
+	return true // No recent updates by team members
 }
 
 // Take the list of PRs and send a message to a keybase channel
