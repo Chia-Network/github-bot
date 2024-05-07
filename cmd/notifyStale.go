@@ -26,7 +26,7 @@ var notifyStaleCmd = &cobra.Command{
 		loopDuration := viper.GetDuration("loop-time")
 		for {
 			log.Println("Checking for community PRs that have no update in the last 7 days")
-			_, err = github2.CheckStalePRs(client, cfg.InternalTeam, cfg.LabelConfig)
+			_, err = github2.CheckStalePRs(client, cfg.InternalTeam, cfg.CheckStalePending)
 			if err != nil {
 				log.Fatalln(err.Error())
 			}

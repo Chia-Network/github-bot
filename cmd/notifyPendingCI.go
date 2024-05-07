@@ -26,7 +26,7 @@ var notifyPendingCICmd = &cobra.Command{
 		loopDuration := viper.GetDuration("loop-time")
 		for {
 			log.Println("Checking for community PRs that are waiting for CI to run")
-			_, err = github2.CheckForPendingCI(client, cfg.InternalTeam, cfg.LabelConfig)
+			_, err = github2.CheckForPendingCI(client, cfg.InternalTeam, cfg.CheckStalePending)
 			if err != nil {
 				log.Fatalln(err.Error())
 			}

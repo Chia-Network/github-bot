@@ -2,9 +2,7 @@ package github
 
 import (
 	"context"
-	"fmt"
 	"log"
-	"strings"
 	"time"
 
 	"github.com/google/go-github/v60/github"
@@ -13,31 +11,21 @@ import (
 )
 
 // CheckStalePRs will return a list of PR URLs that have not been updated in the last 7 days by internal team members.
-func CheckStalePRs(githubClient *github.Client, internalTeam string, cfg config.LabelConfig) ([]string, error) {
+func CheckStalePRs(githubClient *github.Client, internalTeam string, cfg config.CheckStalePending) ([]string, error) {
 	var stalePRUrls []string
 	cutoffDate := time.Now().AddDate(0, 0, -7) // 7 days ago
 	teamMembers, err := GetTeamMemberList(githubClient, internalTeam)
 	if err != nil {
 		return nil, err
 	}
+	communityPRs, err := FindCommunityPRs(cfg.CheckStalePending, teamMembers, githubClient)
+	if err != nil {
+		return nil, err
+	}
 
-	for _, fullRepo := range cfg.LabelCheckRepos {
-		log.Println("Checking repository:", fullRepo.Name)
-		parts := strings.Split(fullRepo.Name, "/")
-		if len(parts) != 2 {
-			return nil, fmt.Errorf("invalid repository name - must contain owner and repository: %s", fullRepo.Name)
-		}
-		owner, repo := parts[0], parts[1]
-
-		communityPRs, err := FindCommunityPRs(owner, repo, teamMembers, githubClient)
-		if err != nil {
-			return nil, err
-		}
-
-		for _, pr := range communityPRs {
-			if isStale(githubClient, pr, teamMembers, cutoffDate) {
-				stalePRUrls = append(stalePRUrls, pr.GetHTMLURL()) // Collecting URLs instead of PR objects
-			}
+	for _, pr := range communityPRs {
+		if isStale(githubClient, pr, teamMembers, cutoffDate) {
+			stalePRUrls = append(stalePRUrls, pr.GetHTMLURL()) // Collecting URLs instead of PR objects
 		}
 	}
 	return stalePRUrls, nil
