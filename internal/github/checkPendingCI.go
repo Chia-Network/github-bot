@@ -95,15 +95,19 @@ func checkCIStatus(client *github.Client, owner, repo string, prNumber int) (boo
 	return checks.GetTotal() > 0, nil
 }
 
+// If a new commit is made after an approval, any approval reviews become dismissed.
 func checkForDismissedReviews(client *github.Client, owner, repo string, prNumber int) (bool, error) {
 	reviews, _, err := client.PullRequests.ListReviews(context.Background(), owner, repo, prNumber, nil)
 	if err != nil {
 		return false, err
 	}
-	for _, review := range reviews {
-		if review.GetState() == "DISMISSED" {
-			return true, nil
-		}
+	if len(reviews) == 0 {
+		return false, err
 	}
+	lastReview := reviews[len(reviews)-1]
+	if lastReview.GetState() == "DISMISSED" {
+		return true, nil
+	}
+
 	return false, err
 }
