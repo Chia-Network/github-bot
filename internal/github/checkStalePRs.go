@@ -40,7 +40,7 @@ func CheckStalePRs(githubClient *github.Client, internalTeam string, cfg config.
 // Checks if a PR is stale based on the last update from team members
 func isStale(githubClient *github.Client, pr *github.PullRequest, teamMembers map[string]bool, cutoffDate time.Time) (bool, error) {
 	// Set up a context with a timeout to control all operations within this function
-	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 300*time.Second)
 	defer cancel() // Ensure resources are cleaned up correctly after the function exits
 
 	listOptions := &github.ListOptions{PerPage: 100}
