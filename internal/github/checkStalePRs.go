@@ -2,6 +2,7 @@ package github
 
 import (
 	"context"
+	"fmt"
 	"log"
 	"time"
 
@@ -24,28 +25,36 @@ func CheckStalePRs(githubClient *github.Client, internalTeam string, cfg config.
 	}
 
 	for _, pr := range communityPRs {
-		if isStale(githubClient, pr, teamMembers, cutoffDate) {
-			stalePRUrls = append(stalePRUrls, pr.GetHTMLURL()) // Collecting URLs instead of PR objects
+		stale, err := isStale(githubClient, pr, teamMembers, cutoffDate) // Handle both returned values
+		if err != nil {
+			log.Printf("Error checking if PR is stale: %v", err) // Log or handle the error
+			continue                                             // Skip this PR or handle the error appropriately
+		}
+		if stale {
+			stalePRUrls = append(stalePRUrls, pr.GetHTMLURL()) // Append if PR is confirmed stale
 		}
 	}
 	return stalePRUrls, nil
 }
 
 // Checks if a PR is stale based on the last update from team members
-func isStale(githubClient *github.Client, pr *github.PullRequest, teamMembers map[string]bool, cutoffDate time.Time) bool {
-	// Retrieve the timeline for the PR to find the latest relevant event
+func isStale(githubClient *github.Client, pr *github.PullRequest, teamMembers map[string]bool, cutoffDate time.Time) (bool, error) {
+	// Set up a context with a timeout to control all operations within this function
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancel() // Ensure resources are cleaned up correctly after the function exits
+
 	listOptions := &github.ListOptions{PerPage: 100}
 	for {
-		// Note: As far as the GitHub API is concerned, every pull request is an issue,
-		// but not every issue is a pull request.
-		events, resp, err := githubClient.Issues.ListIssueTimeline(context.TODO(), pr.Base.Repo.Owner.GetLogin(), pr.Base.Repo.GetName(), pr.GetNumber(), listOptions)
+		events, resp, err := githubClient.Issues.ListIssueTimeline(ctx, pr.Base.Repo.Owner.GetLogin(), pr.Base.Repo.GetName(), pr.GetNumber(), listOptions)
 		if err != nil {
-			log.Printf("Failed to get timeline for PR #%d: %v", pr.GetNumber(), err)
-			break // Skip to next PR on error
+			return false, fmt.Errorf("failed to get timeline for PR #%d: %w", pr.GetNumber(), err)
 		}
 		for _, event := range events {
-			if event.Event != nil && *event.Event == "commented" && teamMembers[*event.Actor.Login] && event.CreatedAt.After(cutoffDate) {
-				return false // PR has been updated by a team member recently
+			if event.Event == nil || event.Actor == nil || event.Actor.Login == nil {
+				continue
+			}
+			if (*event.Event == "commented" || *event.Event == "reviewed") && teamMembers[*event.Actor.Login] && event.CreatedAt.After(cutoffDate) {
+				return false, nil
 			}
 		}
 		if resp.NextPage == 0 {
@@ -53,7 +62,7 @@ func isStale(githubClient *github.Client, pr *github.PullRequest, teamMembers ma
 		}
 		listOptions.Page = resp.NextPage
 	}
-	return true // No recent updates by team members
+	return true, nil
 }
 
 // Take the list of PRs and send a message to a keybase channel
