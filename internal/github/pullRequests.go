@@ -40,7 +40,7 @@ func FindCommunityPRs(repos []config.CheckRepo, teamMembers map[string]bool, git
 
 			for _, pullRequest := range pullRequests {
 				if *pullRequest.Number < fullRepo.MinimumNumber {
-					continue
+					break
 				}
 				if *pullRequest.Draft {
 					continue
