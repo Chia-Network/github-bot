@@ -52,13 +52,12 @@ func CheckForPendingCI(githubClient *github.Client, internalTeam string, cfg con
 				continue
 			}
 
-			needsReApproval, err := checkForDismissedReviews(githubClient, owner, repo, pr.GetNumber())
+			teamMemberActivity, err := checkTeamMemberActivity(githubClient, owner, repo, pr.GetNumber(), teamMembers, lastCommitTime)
 			if err != nil {
-				log.Printf("Error checking review status for PR #%d: %v", pr.GetNumber(), err)
-				continue
+				log.Printf("Error checking team member activity for PR #%d: %v", pr.GetNumber(), err)
+				continue // or handle the error as needed
 			}
-
-			if !hasCIRuns || needsReApproval {
+			if !hasCIRuns || !teamMemberActivity {
 				log.Printf("PR #%d by %s is ready for CI since %v but no CI actions have started yet, or it requires re-approval.", pr.GetNumber(), pr.User.GetLogin(), pr.CreatedAt)
 				pendingPRs = append(pendingPRs, pr.GetHTMLURL())
 			}
@@ -95,19 +94,33 @@ func checkCIStatus(client *github.Client, owner, repo string, prNumber int) (boo
 	return checks.GetTotal() > 0, nil
 }
 
-// If a new commit is made after an approval, any approval reviews become dismissed.
-func checkForDismissedReviews(client *github.Client, owner, repo string, prNumber int) (bool, error) {
-	reviews, _, err := client.PullRequests.ListReviews(context.Background(), owner, repo, prNumber, nil)
+func checkTeamMemberActivity(client *github.Client, owner, repo string, prNumber int, teamMembers map[string]bool, lastCommitTime time.Time) (bool, error) {
+	comments, _, err := client.Issues.ListComments(context.Background(), owner, repo, prNumber, nil)
 	if err != nil {
-		return false, err
-	}
-	if len(reviews) == 0 {
-		return false, err
-	}
-	lastReview := reviews[len(reviews)-1]
-	if lastReview.GetState() == "DISMISSED" {
-		return true, nil
+		return false, fmt.Errorf("failed to fetch comments: %w", err)
 	}
 
-	return false, err
+	for _, comment := range comments {
+		if _, ok := teamMembers[comment.User.GetLogin()]; ok && comment.CreatedAt.After(lastCommitTime) {
+			// Check if the comment is after the last commit
+			return true, nil // Active and relevant participation
+		}
+	}
+
+	reviews, _, err := client.PullRequests.ListReviews(context.Background(), owner, repo, prNumber, nil)
+	if err != nil {
+		return false, fmt.Errorf("failed to fetch reviews: %w", err)
+	}
+
+	for _, review := range reviews {
+		if _, ok := teamMembers[review.User.GetLogin()]; ok && review.SubmittedAt.After(lastCommitTime) {
+			switch review.GetState() {
+			case "DISMISSED", "CHANGES_REQUESTED", "COMMENTED":
+				// Check if the review is after the last commit and is in one of the specified states
+				return true, nil // Active and relevant participation found
+			}
+		}
+	}
+
+	return false, nil // No recent relevant activity from team members
 }
