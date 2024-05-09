@@ -74,6 +74,7 @@ func getLastCommitTime(client *github.Client, owner, repo string, prNumber int) 
 	if len(commits) == 0 {
 		return time.Time{}, fmt.Errorf("no commits found for PR #%d", prNumber) // Handle case where no commits are found
 	}
+	// Requesting a list of commits will return the json list in descending order
 	lastCommit := commits[len(commits)-1]
 	commitDate := lastCommit.GetCommit().GetAuthor().GetDate() // commitDate is of type Timestamp
 
@@ -117,7 +118,7 @@ func checkTeamMemberActivity(client *github.Client, owner, repo string, prNumber
 			switch review.GetState() {
 			case "DISMISSED", "CHANGES_REQUESTED", "COMMENTED":
 				// Check if the review is after the last commit and is in one of the specified states
-				return true, nil // Active and relevant participation found
+				return true, nil
 			}
 		}
 	}
