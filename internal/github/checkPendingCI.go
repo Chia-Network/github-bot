@@ -59,7 +59,7 @@ func CheckForPendingCI(githubClient *github.Client, internalTeam string, cfg con
 				continue // or handle the error as needed
 			}
 			if !hasCIRuns || !teamMemberActivity {
-				log.Printf("PR #%d in %s %s by %s is ready for CI since %v but no CI actions have started yet, or it requires re-approval.", owner, repo, pr.GetNumber(), pr.User.GetLogin(), pr.CreatedAt)
+				log.Printf("PR #%d in %s %s by %s is ready for CI since %v but no CI actions have started yet, or it requires re-approval.", pr.GetNumber(), owner, repo, pr.User.GetLogin(), pr.CreatedAt)
 				pendingPRs = append(pendingPRs, pr.GetHTMLURL())
 			}
 		}
