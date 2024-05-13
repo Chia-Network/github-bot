@@ -37,29 +37,29 @@ func CheckForPendingCI(githubClient *github.Client, internalTeam string, cfg con
 			// Dynamic cutoff time based on the last commit to the PR
 			lastCommitTime, err := getLastCommitTime(githubClient, owner, repo, pr.GetNumber())
 			if err != nil {
-				log.Printf("Error retrieving last commit time for PR #%d in %s %s: %v", pr.GetNumber(), owner, repo, err)
+				log.Printf("Error retrieving last commit time for PR #%d in %s/%s: %v", pr.GetNumber(), owner, repo, err)
 				continue
 			}
 			cutoffTime := lastCommitTime.Add(2 * time.Hour) // 2 hours after the last commit
 
 			if time.Now().Before(cutoffTime) {
-				log.Printf("Skipping PR #%d from %s %s repo as it's still within the 2-hour window from the last commit.", pr.GetNumber(), owner, repo)
+				log.Printf("Skipping PR #%d from %s/%s repo as it's still within the 2-hour window from the last commit.", pr.GetNumber(), owner, repo)
 				continue
 			}
 
 			hasCIRuns, err := checkCIStatus(githubClient, owner, repo, pr.GetNumber())
 			if err != nil {
-				log.Printf("Error checking CI status for PR #%d in %s %s: %v", pr.GetNumber(), owner, repo, err)
+				log.Printf("Error checking CI status for PR #%d in %s/%s: %v", pr.GetNumber(), owner, repo, err)
 				continue
 			}
 
 			teamMemberActivity, err := checkTeamMemberActivity(githubClient, owner, repo, pr.GetNumber(), teamMembers, lastCommitTime)
 			if err != nil {
-				log.Printf("Error checking team member activity for PR #%d in %s %s: %v", pr.GetNumber(), owner, repo, err)
+				log.Printf("Error checking team member activity for PR #%d in %s/%s: %v", pr.GetNumber(), owner, repo, err)
 				continue // or handle the error as needed
 			}
 			if !hasCIRuns || !teamMemberActivity {
-				log.Printf("PR #%d in %s %s by %s is ready for CI since %v but no CI actions have started yet, or it requires re-approval.", pr.GetNumber(), owner, repo, pr.User.GetLogin(), pr.CreatedAt)
+				log.Printf("PR #%d in %s/%s by %s is ready for CI since %v but no CI actions have started yet, or it requires re-approval.", pr.GetNumber(), owner, repo, pr.User.GetLogin(), pr.CreatedAt)
 				pendingPRs = append(pendingPRs, pr.GetHTMLURL())
 			}
 		}
