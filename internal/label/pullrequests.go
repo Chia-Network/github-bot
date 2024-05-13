@@ -59,5 +59,5 @@ func PullRequests(githubClient *github.Client, internalTeam string, cfg config.L
 		}
 	}
 
-	return nil // Ensure that a nil is returned if the function completes without error
+	return nil
 }

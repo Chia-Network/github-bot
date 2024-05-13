@@ -25,10 +25,11 @@ func CheckStalePRs(githubClient *github.Client, internalTeam string, cfg config.
 	}
 
 	for _, pr := range communityPRs {
+		repoName := pr.GetBase().GetRepo().GetFullName()                 // Get the full name of the repository
 		stale, err := isStale(githubClient, pr, teamMembers, cutoffDate) // Handle both returned values
 		if err != nil {
-			log.Printf("Error checking if PR is stale: %v", err) // Log or handle the error
-			continue                                             // Skip this PR or handle the error appropriately
+			log.Printf("Error checking if PR in repo %s is stale: %v", repoName, err)
+			continue // Skip this PR or handle the error appropriately
 		}
 		if stale {
 			stalePRUrls = append(stalePRUrls, pr.GetHTMLURL()) // Append if PR is confirmed stale

@@ -24,13 +24,15 @@ var notifyStaleCmd = &cobra.Command{
 
 		loop := viper.GetBool("loop")
 		loopDuration := viper.GetDuration("loop-time")
+		var listPendingPRs []string
 		for {
 			log.Println("Checking for community PRs that have no update in the last 7 days")
 			_, err = github2.CheckStalePRs(client, cfg.InternalTeam, cfg.CheckStalePending)
 			if err != nil {
-				log.Fatalln(err.Error())
+				log.Printf("The following error occurred while obtaining a list of stale PRs: %s", err)
+				continue
 			}
-
+			log.Printf("Stale PRs: %v\n", listPendingPRs)
 			if !loop {
 				break
 			}

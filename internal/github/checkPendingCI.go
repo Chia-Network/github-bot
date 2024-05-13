@@ -22,7 +22,8 @@ func CheckForPendingCI(githubClient *github.Client, internalTeam string, cfg con
 		log.Println("Checking repository:", fullRepo.Name)
 		parts := strings.Split(fullRepo.Name, "/")
 		if len(parts) != 2 {
-			return nil, fmt.Errorf("invalid repository name - must contain owner and repository: %s", fullRepo.Name)
+			log.Printf("invalid repository name - must contain owner and repository: %s", fullRepo.Name)
+			continue
 		}
 		owner, repo := parts[0], parts[1]
 
@@ -36,29 +37,29 @@ func CheckForPendingCI(githubClient *github.Client, internalTeam string, cfg con
 			// Dynamic cutoff time based on the last commit to the PR
 			lastCommitTime, err := getLastCommitTime(githubClient, owner, repo, pr.GetNumber())
 			if err != nil {
-				log.Printf("Error retrieving last commit time for PR #%d: %v", pr.GetNumber(), err)
+				log.Printf("Error retrieving last commit time for PR #%d in %s %s: %v", pr.GetNumber(), owner, repo, err)
 				continue
 			}
 			cutoffTime := lastCommitTime.Add(2 * time.Hour) // 2 hours after the last commit
 
 			if time.Now().Before(cutoffTime) {
-				log.Printf("Skipping PR #%d as it's still within the 2-hour window from the last commit.", pr.GetNumber())
+				log.Printf("Skipping PR #%d from %s %s repo as it's still within the 2-hour window from the last commit.", pr.GetNumber(), owner, repo)
 				continue
 			}
 
 			hasCIRuns, err := checkCIStatus(githubClient, owner, repo, pr.GetNumber())
 			if err != nil {
-				log.Printf("Error checking CI status for PR #%d: %v", pr.GetNumber(), err)
+				log.Printf("Error checking CI status for PR #%d in %s %s: %v", pr.GetNumber(), owner, repo, err)
 				continue
 			}
 
 			teamMemberActivity, err := checkTeamMemberActivity(githubClient, owner, repo, pr.GetNumber(), teamMembers, lastCommitTime)
 			if err != nil {
-				log.Printf("Error checking team member activity for PR #%d: %v", pr.GetNumber(), err)
+				log.Printf("Error checking team member activity for PR #%d in %s %s: %v", pr.GetNumber(), owner, repo, err)
 				continue // or handle the error as needed
 			}
 			if !hasCIRuns || !teamMemberActivity {
-				log.Printf("PR #%d by %s is ready for CI since %v but no CI actions have started yet, or it requires re-approval.", pr.GetNumber(), pr.User.GetLogin(), pr.CreatedAt)
+				log.Printf("PR #%d in %s %s by %s is ready for CI since %v but no CI actions have started yet, or it requires re-approval.", owner, repo, pr.GetNumber(), pr.User.GetLogin(), pr.CreatedAt)
 				pendingPRs = append(pendingPRs, pr.GetHTMLURL())
 			}
 		}
