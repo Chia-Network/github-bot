@@ -40,14 +40,14 @@ func CheckStalePRs(githubClient *github.Client, internalTeam string, cfg config.
 
 // Checks if a PR is stale based on the last update from team members
 func isStale(githubClient *github.Client, pr *github.PullRequest, teamMembers map[string]bool, cutoffDate time.Time) (bool, error) {
-	// Set up a context with a timeout to control all operations within this function
-	ctx, cancel := context.WithTimeout(context.Background(), 300*time.Second)
-	defer cancel() // Ensure resources are cleaned up correctly after the function exits
-
 	listOptions := &github.ListOptions{PerPage: 100}
 	for {
+		// Create a context for each request
+		ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second) // 10 seconds timeout for each request
+
 		events, resp, err := githubClient.Issues.ListIssueTimeline(ctx, pr.Base.Repo.Owner.GetLogin(), pr.Base.Repo.GetName(), pr.GetNumber(), listOptions)
 		if err != nil {
+			cancel() // Explicitly cancel the context when an error occurs
 			return false, fmt.Errorf("failed to get timeline for PR #%d: %w", pr.GetNumber(), err)
 		}
 		for _, event := range events {
@@ -55,9 +55,11 @@ func isStale(githubClient *github.Client, pr *github.PullRequest, teamMembers ma
 				continue
 			}
 			if (*event.Event == "commented" || *event.Event == "reviewed") && teamMembers[*event.Actor.Login] && event.CreatedAt.After(cutoffDate) {
+				cancel() // Clean up the context when returning within the loop
 				return false, nil
 			}
 		}
+		cancel() // Clean up the context at the end of the loop iteration
 		if resp.NextPage == 0 {
 			break
 		}
@@ -65,5 +67,3 @@ func isStale(githubClient *github.Client, pr *github.PullRequest, teamMembers ma
 	}
 	return true, nil
 }
-
-// Take the list of PRs and send a message to a keybase channel
