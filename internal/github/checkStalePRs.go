@@ -43,7 +43,7 @@ func isStale(githubClient *github.Client, pr *github.PullRequest, teamMembers ma
 	listOptions := &github.ListOptions{PerPage: 100}
 	for {
 		// Create a context for each request
-		ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second) // 10 seconds timeout for each request
+		ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second) // 30 seconds timeout for each request
 
 		events, resp, err := githubClient.Issues.ListIssueTimeline(ctx, pr.Base.Repo.Owner.GetLogin(), pr.Base.Repo.GetName(), pr.GetNumber(), listOptions)
 		if err != nil {
