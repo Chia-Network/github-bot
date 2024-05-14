@@ -2,9 +2,10 @@ package config
 
 // Config defines the config for all aspects of the bot
 type Config struct {
-	GithubToken  string `yaml:"github_token"`
-	InternalTeam string `yaml:"internal_team"`
-	LabelConfig  `yaml:",inline"`
+	GithubToken       string `yaml:"github_token"`
+	InternalTeam      string `yaml:"internal_team"`
+	LabelConfig       `yaml:",inline"`
+	CheckStalePending `yaml:",inline"`
 }
 
 // LabelConfig is the configuration options specific to labeling PRs
@@ -20,4 +21,9 @@ type LabelConfig struct {
 type CheckRepo struct {
 	Name          string `yaml:"name"`
 	MinimumNumber int    `yaml:"minimum_number"`
+}
+
+// CheckStalePending are config settings when checking a repo
+type CheckStalePending struct {
+	CheckStalePending []CheckRepo `yaml:"check_stale_pending_repos"`
 }
