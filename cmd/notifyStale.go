@@ -30,6 +30,7 @@ var notifyStaleCmd = &cobra.Command{
 			_, err = github2.CheckStalePRs(client, cfg.InternalTeam, cfg.CheckStalePending)
 			if err != nil {
 				log.Printf("The following error occurred while obtaining a list of stale PRs: %s", err)
+				time.Sleep(loopDuration)
 				continue
 			}
 			log.Printf("Stale PRs: %v\n", listPendingPRs)
