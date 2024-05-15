@@ -28,7 +28,8 @@ jobs:
       fail-fast: false
       matrix:
         mode:
-          - name: [label-prs, notify_stale_pending_prs]
+          - name: label-prs
+          - name: notify-stale-pending-prs
     steps:
       - uses: actions/checkout@v4
 
