@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"context"
+	"fmt"
 	"log"
 	"time"
 
@@ -11,6 +12,7 @@ import (
 
 	"github.com/chia-network/github-bot/internal/config"
 	github2 "github.com/chia-network/github-bot/internal/github"
+	"github.com/chia-network/github-bot/internal/keybase"
 )
 
 var notifyPendingCICmd = &cobra.Command{
@@ -27,6 +29,7 @@ var notifyPendingCICmd = &cobra.Command{
 		loopDuration := viper.GetDuration("loop-time")
 		ctx := context.Background()
 		var listPendingPRs []string
+
 		for {
 			log.Println("Checking for community PRs that are waiting for CI to run")
 			listPendingPRs, err = github2.CheckForPendingCI(ctx, client, cfg)
@@ -35,12 +38,20 @@ var notifyPendingCICmd = &cobra.Command{
 				time.Sleep(loopDuration)
 				continue
 			}
-			log.Printf("Pending PRs ready for CI: %v\n", listPendingPRs)
 
-			if !loop {
-				break
+			if len(listPendingPRs) > 0 {
+				message := fmt.Sprintf("The following pull requests are waiting for approval for CI checks to run: %v", listPendingPRs)
+				log.Printf("Pending PRs ready for CI: %v\n", listPendingPRs)
+				if err := keybase.SendKeybaseMsg(message); err != nil {
+					log.Printf("Failed to send message: %s", err)
+				} else {
+					log.Printf("Pending PRs ready for CI: %v\n", listPendingPRs)
+
+				}
+				if !loop {
+					break
+				}
 			}
-
 			log.Printf("Waiting %s for next iteration\n", loopDuration.String())
 			time.Sleep(loopDuration)
 		}

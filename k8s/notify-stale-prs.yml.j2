@@ -23,3 +23,10 @@ secretFile:
       skip_users:
         - "dependabot[bot]"
         - "github-actions[bot]"
+
+
+secretEnvironment:
+  GH_BOT_DATABASE_HOST: "{{ DB_HOST }}"
+  GH_BOT_DATABASE_USERNAME: "{{ GH_BOT_DB_USERNAME }}"
+  GH_BOT_DATABASE_PASSWORD: "{{ GH_BOT_DB_PASSWORD }}"
+  GH_BOT_DATABASE_DBNAME: github-bot

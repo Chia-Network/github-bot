@@ -49,6 +49,9 @@ jobs:
             secret/data/fmt/k8s/fmt-k8s-internal api_server_url | K8S_API_SERVER_URL;
             secret/data/github_users/chiaautomation/github-bot token | BOT_GITHUB_TOKEN;
             secret/data/github/teams internal | INTERNAL_TEAM_NAME;
+            secret/data/fmt/mysql/users/github-bot username | GH_BOT_DB_USERNAME;
+            secret/data/fmt/mysql/users/github-bot password | GH_BOT_DB_PASSWORD;
+            secret/data/fmt/mysql/db-info host | DB_HOST;
 
       - name: Login to k8s cluster
         uses: Chia-Network/actions/vault/k8s-login@main
