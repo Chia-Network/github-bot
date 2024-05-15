@@ -29,6 +29,7 @@ jobs:
       matrix:
         mode:
           - name: label-prs
+          - name: notify-stale-pending-prs
     steps:
       - uses: actions/checkout@v4
 
