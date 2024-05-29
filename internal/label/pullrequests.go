@@ -25,16 +25,13 @@ func PullRequests(githubClient *github.Client, internalTeam string, cfg config.L
 
 	for _, pullRequest := range pullRequests {
 		user := *pullRequest.User.Login
-		if cfg.LabelSkipMap[user] {
-			continue
-		}
+
 		var label string
 		if teamMembers[user] {
 			label = cfg.LabelInternal
 		} else {
 			label = cfg.LabelExternal
 		}
-
 		if label != "" {
 			log.Printf("Pull Request %d by %s will be labeled %s\n", *pullRequest.Number, user, label)
 			hasLabel := false
