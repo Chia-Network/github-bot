@@ -6,6 +6,7 @@ type Config struct {
 	InternalTeam      string `yaml:"internal_team"`
 	LabelConfig       `yaml:",inline"`
 	CheckStalePending `yaml:",inline"`
+	CheckRepo         `yaml:",inline"`
 }
 
 // LabelConfig is the configuration options specific to labeling PRs
