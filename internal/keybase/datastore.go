@@ -20,7 +20,6 @@ type PRInfo struct {
 
 // Datastore manages connections and the state of the database.
 type Datastore struct {
-	Repos       *config.CheckStalePending
 	mysqlClient *sql.DB
 	dbHost      string
 	dbPort      uint16
@@ -38,7 +37,6 @@ func NewDatastore(repos *config.CheckStalePending, dbHost string, dbPort uint16,
 		dbUser: dbUser,
 		dbPass: dbPass,
 		dbName: dbName,
-		Repos:  repos,
 	}
 
 	err := datastore.createDBClient()
