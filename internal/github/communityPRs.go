@@ -46,7 +46,7 @@ func FindCommunityPRs(repos []config.CheckRepo, teamMembers map[string]bool, git
 					continue
 				}
 				user := *pullRequest.User.Login
-				if !teamMembers[user] || !fullRepo.SkipMap[user] {
+				if !teamMembers[user] || !fullRepo.SkipUsersMap[user] {
 					finalPRs = append(finalPRs, pullRequest)
 				}
 			}
