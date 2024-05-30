@@ -14,14 +14,14 @@ type LabelConfig struct {
 	LabelInternal   string      `yaml:"label_internal"`
 	LabelExternal   string      `yaml:"label_external"`
 	LabelCheckRepos []CheckRepo `yaml:"label_check_repos"`
-	LabelSkipUsers  []string    `yaml:"label_skip_users"`
 }
 
 // CheckRepo is config settings when checking a repo
 type CheckRepo struct {
-	Name          string `yaml:"name"`
-	MinimumNumber int    `yaml:"minimum_number"`
-	LabelSkipMap  map[string]bool
+	Name          string   `yaml:"name"`
+	MinimumNumber int      `yaml:"minimum_number"`
+	SkipUsers     []string `yaml:"label_skip_users"`
+	SkipUsersMap  map[string]bool
 }
 
 // CheckStalePending are config settings when checking a repo
