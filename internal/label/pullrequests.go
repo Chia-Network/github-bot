@@ -30,7 +30,7 @@ func PullRequests(githubClient *github.Client, internalTeam string, cfg *config.
 		if teamMembers[user] {
 			label = cfg.LabelInternal
 		} else {
-			label = cfg.LabelInternal
+			label = cfg.LabelExternal
 		}
 		if label != "" {
 			log.Printf("Pull Request %d by %s will be labeled %s\n", *pullRequest.Number, user, label)
