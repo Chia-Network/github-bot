@@ -27,7 +27,7 @@ var notifyStaleCmd = &cobra.Command{
 		var listPendingPRs []string
 		for {
 			log.Println("Checking for community PRs that have no update in the last 7 days")
-			_, err = github2.CheckStalePRs(client, cfg.InternalTeam, cfg)
+			_, err = github2.CheckStalePRs(client, cfg)
 			if err != nil {
 				log.Printf("The following error occurred while obtaining a list of stale PRs: %s", err)
 				time.Sleep(loopDuration)

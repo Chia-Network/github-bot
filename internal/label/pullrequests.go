@@ -12,8 +12,8 @@ import (
 )
 
 // PullRequests applies internal or community labels to pull requests
-func PullRequests(githubClient *github.Client, internalTeam string, cfg *config.Config) error {
-	teamMembers, err := github2.GetTeamMemberList(githubClient, internalTeam)
+func PullRequests(githubClient *github.Client, cfg *config.Config) error {
+	teamMembers, err := github2.GetTeamMemberList(githubClient, cfg.InternalTeam)
 	if err != nil {
 		return fmt.Errorf("error getting team members: %w", err) // Properly handle and return error if team member list fetch fails
 	}
