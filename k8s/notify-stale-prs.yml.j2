@@ -6,7 +6,6 @@ image:
 deployment:
   args:
     - notify-pendingci
-    - notify-stale
     - --loop
 
 # Creates a secret with the following values, and mounts as a file into the main deployment container
@@ -16,8 +15,11 @@ secretFile:
     config.yml: |
       github_token: "{{ BOT_GITHUB_TOKEN }}"
       internal_team: "{{ INTERNAL_TEAM_NAME }}"
-      check_stale_pending_repos:
+      check_repos:
         - name: "Chia-Network/chia-blockchain"
           minimum_number: 17788
         - name: "Chia-Network/chia-blockchain-gui"
           minimum_number: 2300
+      skip_users:
+        - "dependabot[bot]"
+        - "github-actions[bot]"

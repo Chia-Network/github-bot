@@ -27,7 +27,7 @@ var notifyPendingCICmd = &cobra.Command{
 		var listPendingPRs []string
 		for {
 			log.Println("Checking for community PRs that are waiting for CI to run")
-			listPendingPRs, err = github2.CheckForPendingCI(client, cfg.InternalTeam, cfg.CheckStalePending)
+			listPendingPRs, err = github2.CheckForPendingCI(client, cfg)
 			if err != nil {
 				log.Printf("The following error occurred while obtaining a list of pending PRs: %s", err)
 				time.Sleep(loopDuration)

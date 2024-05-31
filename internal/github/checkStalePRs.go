@@ -12,14 +12,14 @@ import (
 )
 
 // CheckStalePRs will return a list of PR URLs that have not been updated in the last 7 days by internal team members.
-func CheckStalePRs(githubClient *github.Client, internalTeam string, cfg config.CheckStalePending) ([]string, error) {
+func CheckStalePRs(githubClient *github.Client, cfg *config.Config) ([]string, error) {
 	var stalePRUrls []string
 	cutoffDate := time.Now().Add(7 * 24 * time.Hour) // 7 days ago
-	teamMembers, err := GetTeamMemberList(githubClient, internalTeam)
+	teamMembers, err := GetTeamMemberList(githubClient, cfg.InternalTeam)
 	if err != nil {
 		return nil, err
 	}
-	communityPRs, err := FindCommunityPRs(cfg.CheckStalePending, teamMembers, githubClient)
+	communityPRs, err := FindCommunityPRs(cfg, teamMembers, githubClient)
 	if err != nil {
 		return nil, err
 	}

@@ -20,9 +20,9 @@ func LoadConfig(path string) (*Config, error) {
 		return nil, err
 	}
 
-	config.LabelSkipMap = map[string]bool{}
-	for _, user := range config.LabelSkipUsers {
-		config.LabelSkipMap[user] = true
+	config.SkipUsersMap = map[string]bool{}
+	for _, user := range config.SkipUsers {
+		config.SkipUsersMap[user] = true
 	}
 
 	return config, nil

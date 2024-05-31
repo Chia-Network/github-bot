@@ -12,7 +12,7 @@ import (
 )
 
 // FindCommunityPRs obtains PRs based on provided filters
-func FindCommunityPRs(repos []config.CheckRepo, teamMembers map[string]bool, githubClient *github.Client) ([]*github.PullRequest, error) {
+func FindCommunityPRs(cfg *config.Config, teamMembers map[string]bool, githubClient *github.Client) ([]*github.PullRequest, error) {
 	var finalPRs []*github.PullRequest
 	opts := &github.PullRequestListOptions{
 		State:     "open",
@@ -24,7 +24,7 @@ func FindCommunityPRs(repos []config.CheckRepo, teamMembers map[string]bool, git
 		},
 	}
 
-	for _, fullRepo := range repos {
+	for _, fullRepo := range cfg.CheckRepos {
 		log.Println("Checking repository:", fullRepo.Name)
 		parts := strings.Split(fullRepo.Name, "/")
 		if len(parts) != 2 {
@@ -46,7 +46,7 @@ func FindCommunityPRs(repos []config.CheckRepo, teamMembers map[string]bool, git
 					continue
 				}
 				user := *pullRequest.User.Login
-				if !teamMembers[user] {
+				if !teamMembers[user] || !cfg.SkipUsersMap[user] {
 					finalPRs = append(finalPRs, pullRequest)
 				}
 			}

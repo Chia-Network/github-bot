@@ -12,29 +12,26 @@ import (
 )
 
 // PullRequests applies internal or community labels to pull requests
-func PullRequests(githubClient *github.Client, internalTeam string, cfg config.LabelConfig) error {
-	teamMembers, err := github2.GetTeamMemberList(githubClient, internalTeam)
+func PullRequests(githubClient *github.Client, cfg *config.Config) error {
+	teamMembers, err := github2.GetTeamMemberList(githubClient, cfg.InternalTeam)
 	if err != nil {
 		return fmt.Errorf("error getting team members: %w", err) // Properly handle and return error if team member list fetch fails
 	}
 
-	pullRequests, err := github2.FindCommunityPRs(cfg.LabelCheckRepos, teamMembers, githubClient)
+	pullRequests, err := github2.FindCommunityPRs(cfg, teamMembers, githubClient)
 	if err != nil {
 		return fmt.Errorf("error finding community PRs: %w", err) // Handle error from finding community PRs
 	}
 
 	for _, pullRequest := range pullRequests {
 		user := *pullRequest.User.Login
-		if cfg.LabelSkipMap[user] {
-			continue
-		}
+
 		var label string
 		if teamMembers[user] {
 			label = cfg.LabelInternal
 		} else {
 			label = cfg.LabelExternal
 		}
-
 		if label != "" {
 			log.Printf("Pull Request %d by %s will be labeled %s\n", *pullRequest.Number, user, label)
 			hasLabel := false

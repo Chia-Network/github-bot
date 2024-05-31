@@ -14,11 +14,11 @@ import (
 )
 
 // CheckForPendingCI returns a list of PR URLs that are ready for CI to run but haven't started yet.
-func CheckForPendingCI(githubClient *github.Client, internalTeam string, cfg config.CheckStalePending) ([]string, error) {
-	teamMembers, _ := GetTeamMemberList(githubClient, internalTeam)
+func CheckForPendingCI(githubClient *github.Client, cfg *config.Config) ([]string, error) {
+	teamMembers, _ := GetTeamMemberList(githubClient, cfg.InternalTeam)
 	var pendingPRs []string
 
-	for _, fullRepo := range cfg.CheckStalePending {
+	for _, fullRepo := range cfg.CheckRepos {
 		log.Println("Checking repository:", fullRepo.Name)
 		parts := strings.Split(fullRepo.Name, "/")
 		if len(parts) != 2 {
@@ -28,7 +28,7 @@ func CheckForPendingCI(githubClient *github.Client, internalTeam string, cfg con
 		owner, repo := parts[0], parts[1]
 
 		// Fetch community PRs using the FindCommunityPRs function
-		communityPRs, err := FindCommunityPRs(cfg.CheckStalePending, teamMembers, githubClient)
+		communityPRs, err := FindCommunityPRs(cfg, teamMembers, githubClient)
 		if err != nil {
 			return nil, err
 		}
