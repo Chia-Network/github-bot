@@ -27,7 +27,7 @@ var labelPRsCmd = &cobra.Command{
 		loopDuration := viper.GetDuration("loop-time")
 		for {
 			log.Println("Labeling Pull Requests")
-			err = label.PullRequests(client, cfg.InternalTeam, cfg.LabelConfig)
+			err = label.PullRequests(client, cfg.InternalTeam, cfg)
 			if err != nil {
 				log.Fatalln(err.Error())
 			}
