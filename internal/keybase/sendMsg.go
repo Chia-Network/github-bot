@@ -1,33 +1,42 @@
 package keybase
 
 import (
+	"bytes"
+	"encoding/json"
+	"fmt"
 	"log"
+	"net/http"
 	"os"
-
-	"github.com/keybase/go-keybase-chat-bot/kbchat"
-	"github.com/keybase/go-keybase-chat-bot/kbchat/types/chat1"
 )
+
+type WebhookMessage struct {
+	Message string `json:"message"`
+}
 
 // SendKeybaseMessage sends a message to a specified Keybase channel
 func SendKeybaseMsg(message string) error {
-	var channel = chat1.ConvIDStr(os.Getenv("GITHUBBOT_CHANNEL"))
-	options := kbchat.RunOptions{
-		Oneshot: &kbchat.OneshotOptions{
-			Username: os.Getenv("KEYBASE_USERNAME"),
-			PaperKey: os.Getenv("KEYBASE_PAPERKEY"),
-		},
+	webhookURL := os.Getenv("KEYBASE_WEBHOOK_URL")
+	if webhookURL == "" {
+		return fmt.Errorf("KEYBASE_WEBHOOK_URL environment variable is not set")
 	}
 
-	api, err := kbchat.Start(options)
+	payload := WebhookMessage{
+		Message: message,
+	}
+	payloadBytes, err := json.Marshal(payload)
 	if err != nil {
-		log.Printf("Error starting Keybase chat: %v", err)
-		return err
+		log.Printf("Error converting data to a JSON string: %v", err)
 	}
 
-	_, err = api.SendMessageByConvID(channel, message)
+	resp, err := http.Post(webhookURL, "application/json", bytes.NewBuffer(payloadBytes))
 	if err != nil {
-		log.Printf("Failed to send message: %v", err)
+		log.Printf("Error sending message: %v", err)
 		return err
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return fmt.Errorf("Received error response: %s", resp.Status)
 	}
 
 	log.Printf("Message successfully sent")

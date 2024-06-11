@@ -52,6 +52,7 @@ jobs:
             secret/data/fmt/mysql/users/github-bot username | GH_BOT_DB_USERNAME;
             secret/data/fmt/mysql/users/github-bot password | GH_BOT_DB_PASSWORD;
             secret/data/fmt/mysql/db-info host | DB_HOST;
+            secret/data/keybase/bots/githubbot webhook | KEYBASE_WEBHOOK_URL;
 
       - name: Login to k8s cluster
         uses: Chia-Network/actions/vault/k8s-login@main
