@@ -81,7 +81,7 @@ func getLastCommitTime(client *github.Client, owner, repo string, prNumber int) 
 
 	// Since GetDate() returns a Timestamp (not *Timestamp), use the address to call GetTime()
 	commitTime := commitDate.GetTime() // Correctly accessing GetTime(), which returns *time.Time
-
+	log.Printf("The last commit time is %s", commitTime.Format(time.RFC3339))
 	if commitTime == nil {
 		return time.Time{}, fmt.Errorf("commit time is nil for PR #%d", prNumber)
 	}
@@ -103,7 +103,9 @@ func checkTeamMemberActivity(client *github.Client, owner, repo string, prNumber
 	}
 
 	for _, comment := range comments {
+		log.Printf("Checking comment by %s at %s", comment.User.GetLogin(), comment.CreatedAt.Format(time.RFC3339))
 		if _, ok := teamMembers[comment.User.GetLogin()]; ok && comment.CreatedAt.After(lastCommitTime) {
+			log.Printf("Found team member comment after last commit time: %s", comment.CreatedAt.Format(time.RFC3339))
 			// Check if the comment is after the last commit
 			return true, nil // Active and relevant participation
 		}
