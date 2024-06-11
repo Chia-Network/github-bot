@@ -1,4 +1,4 @@
-package keybase
+package database
 
 import (
 	"database/sql"
@@ -7,8 +7,6 @@ import (
 	"time"
 
 	"github.com/go-sql-driver/mysql"
-
-	"github.com/chia-network/github-bot/internal/config"
 )
 
 // PRInfo struct holds the PR information
@@ -29,7 +27,7 @@ type Datastore struct {
 }
 
 // NewDatastore initializes a new Datastore with the given configurations.
-func NewDatastore(repos *config.CheckStalePending, dbHost string, dbPort uint16, dbUser string, dbPass string, dbName string) (*Datastore, error) {
+func NewDatastore(dbHost string, dbPort uint16, dbUser string, dbPass string, dbName string) (*Datastore, error) {
 
 	datastore := &Datastore{
 		dbHost: dbHost,

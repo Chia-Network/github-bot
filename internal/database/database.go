@@ -1,4 +1,4 @@
-package keybase
+package database
 
 import (
 	"fmt"
