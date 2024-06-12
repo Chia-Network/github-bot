@@ -81,10 +81,11 @@ func getLastCommitTime(client *github.Client, owner, repo string, prNumber int) 
 
 	// Since GetDate() returns a Timestamp (not *Timestamp), use the address to call GetTime()
 	commitTime := commitDate.GetTime() // Correctly accessing GetTime(), which returns *time.Time
-	log.Printf("The last commit time is %s", commitTime.Format(time.RFC3339))
 	if commitTime == nil {
 		return time.Time{}, fmt.Errorf("commit time is nil for PR #%d", prNumber)
 	}
+	log.Printf("The last commit time is %s", commitTime.Format(time.RFC3339))
+
 	return *commitTime, nil // Safely dereference *time.Time to get time.Time
 }
 
