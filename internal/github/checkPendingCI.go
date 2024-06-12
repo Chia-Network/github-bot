@@ -14,7 +14,7 @@ import (
 )
 
 // CheckForPendingCI returns a list of PR URLs that are ready for CI to run but haven't started yet.
-func CheckForPendingCI(githubClient *github.Client, cfg *config.Config) ([]string, error) {
+func CheckForPendingCI(ctx context.Context, githubClient *github.Client, cfg *config.Config) ([]string, error) {
 	teamMembers, _ := GetTeamMemberList(githubClient, cfg.InternalTeam)
 	var pendingPRs []string
 
@@ -34,8 +34,10 @@ func CheckForPendingCI(githubClient *github.Client, cfg *config.Config) ([]strin
 		}
 
 		for _, pr := range communityPRs {
+			ctx, cancel := context.WithTimeout(ctx, 30*time.Second) // 30 seconds timeout for each request
+			defer cancel()
 			// Dynamic cutoff time based on the last commit to the PR
-			lastCommitTime, err := getLastCommitTime(githubClient, owner, repo, pr.GetNumber())
+			lastCommitTime, err := getLastCommitTime(ctx, githubClient, owner, repo, pr.GetNumber())
 			if err != nil {
 				log.Printf("Error retrieving last commit time for PR #%d in %s/%s: %v", pr.GetNumber(), owner, repo, err)
 				continue
@@ -47,13 +49,13 @@ func CheckForPendingCI(githubClient *github.Client, cfg *config.Config) ([]strin
 				continue
 			}
 
-			hasCIRuns, err := checkCIStatus(githubClient, owner, repo, pr.GetNumber())
+			hasCIRuns, err := checkCIStatus(ctx, githubClient, owner, repo, pr.GetNumber())
 			if err != nil {
 				log.Printf("Error checking CI status for PR #%d in %s/%s: %v", pr.GetNumber(), owner, repo, err)
 				continue
 			}
 
-			teamMemberActivity, err := checkTeamMemberActivity(githubClient, owner, repo, pr.GetNumber(), teamMembers, lastCommitTime)
+			teamMemberActivity, err := checkTeamMemberActivity(ctx, githubClient, owner, repo, pr.GetNumber(), teamMembers, lastCommitTime)
 			if err != nil {
 				log.Printf("Error checking team member activity for PR #%d in %s/%s: %v", pr.GetNumber(), owner, repo, err)
 				continue // or handle the error as needed
@@ -67,13 +69,13 @@ func CheckForPendingCI(githubClient *github.Client, cfg *config.Config) ([]strin
 	return pendingPRs, nil
 }
 
-func getLastCommitTime(client *github.Client, owner, repo string, prNumber int) (time.Time, error) {
-	commits, _, err := client.PullRequests.ListCommits(context.Background(), owner, repo, prNumber, nil)
+func getLastCommitTime(ctx context.Context, client *github.Client, owner, repo string, prNumber int) (time.Time, error) {
+	commits, _, err := client.PullRequests.ListCommits(ctx, owner, repo, prNumber, nil)
 	if err != nil {
 		return time.Time{}, err // Properly handle API errors
 	}
 	if len(commits) == 0 {
-		return time.Time{}, fmt.Errorf("no commits found for PR #%d", prNumber) // Handle case where no commits are found
+		return time.Time{}, fmt.Errorf("no commits found for PR #%d of repo %s", prNumber, repo) // Handle case where no commits are found
 	}
 	// Requesting a list of commits will return the json list in descending order
 	lastCommit := commits[len(commits)-1]
@@ -81,29 +83,32 @@ func getLastCommitTime(client *github.Client, owner, repo string, prNumber int) 
 
 	// Since GetDate() returns a Timestamp (not *Timestamp), use the address to call GetTime()
 	commitTime := commitDate.GetTime() // Correctly accessing GetTime(), which returns *time.Time
-
 	if commitTime == nil {
-		return time.Time{}, fmt.Errorf("commit time is nil for PR #%d", prNumber)
+		return time.Time{}, fmt.Errorf("commit time is nil for PR #%d of repo %s", prNumber, repo)
 	}
+	log.Printf("The last commit time is %s for PR #%d of repo %s", commitTime.Format(time.RFC3339), prNumber, repo)
+
 	return *commitTime, nil // Safely dereference *time.Time to get time.Time
 }
 
-func checkCIStatus(client *github.Client, owner, repo string, prNumber int) (bool, error) {
-	checks, _, err := client.Checks.ListCheckRunsForRef(context.Background(), owner, repo, strconv.Itoa(prNumber), &github.ListCheckRunsOptions{})
+func checkCIStatus(ctx context.Context, client *github.Client, owner, repo string, prNumber int) (bool, error) {
+	checks, _, err := client.Checks.ListCheckRunsForRef(ctx, owner, repo, strconv.Itoa(prNumber), &github.ListCheckRunsOptions{})
 	if err != nil {
 		return false, err
 	}
 	return checks.GetTotal() > 0, nil
 }
 
-func checkTeamMemberActivity(client *github.Client, owner, repo string, prNumber int, teamMembers map[string]bool, lastCommitTime time.Time) (bool, error) {
-	comments, _, err := client.Issues.ListComments(context.Background(), owner, repo, prNumber, nil)
+func checkTeamMemberActivity(ctx context.Context, client *github.Client, owner, repo string, prNumber int, teamMembers map[string]bool, lastCommitTime time.Time) (bool, error) {
+	comments, _, err := client.Issues.ListComments(ctx, owner, repo, prNumber, nil)
 	if err != nil {
 		return false, fmt.Errorf("failed to fetch comments: %w", err)
 	}
 
 	for _, comment := range comments {
+		log.Printf("Checking comment by %s at %s for PR #%d of repo %s", comment.User.GetLogin(), comment.CreatedAt.Format(time.RFC3339), prNumber, repo)
 		if _, ok := teamMembers[comment.User.GetLogin()]; ok && comment.CreatedAt.After(lastCommitTime) {
+			log.Printf("Found team member comment after last commit time: %s for PR #%d of repo %s", comment.CreatedAt.Format(time.RFC3339), prNumber, repo)
 			// Check if the comment is after the last commit
 			return true, nil // Active and relevant participation
 		}
@@ -111,7 +116,7 @@ func checkTeamMemberActivity(client *github.Client, owner, repo string, prNumber
 
 	reviews, _, err := client.PullRequests.ListReviews(context.Background(), owner, repo, prNumber, nil)
 	if err != nil {
-		return false, fmt.Errorf("failed to fetch reviews: %w", err)
+		return false, fmt.Errorf("failed to fetch reviews: %w for PR #%d of repo %s", err, prNumber, repo)
 	}
 
 	for _, review := range reviews {

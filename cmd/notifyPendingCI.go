@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"context"
 	"log"
 	"time"
 
@@ -24,10 +25,11 @@ var notifyPendingCICmd = &cobra.Command{
 
 		loop := viper.GetBool("loop")
 		loopDuration := viper.GetDuration("loop-time")
+		ctx := context.Background()
 		var listPendingPRs []string
 		for {
 			log.Println("Checking for community PRs that are waiting for CI to run")
-			listPendingPRs, err = github2.CheckForPendingCI(client, cfg)
+			listPendingPRs, err = github2.CheckForPendingCI(ctx, client, cfg)
 			if err != nil {
 				log.Printf("The following error occurred while obtaining a list of pending PRs: %s", err)
 				time.Sleep(loopDuration)
