@@ -46,7 +46,7 @@ func FindCommunityPRs(cfg *config.Config, teamMembers map[string]bool, githubCli
 					continue
 				}
 				user := *pullRequest.User.Login
-				if !teamMembers[user] || !cfg.SkipUsersMap[user] {
+				if !teamMembers[user] && !cfg.SkipUsersMap[user] {
 					finalPRs = append(finalPRs, pullRequest)
 				}
 			}
