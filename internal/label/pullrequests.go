@@ -3,13 +3,13 @@ package label
 import (
 	"context"
 	"fmt"
-	"log"
 	"strings"
 
 	"github.com/google/go-github/v60/github"
 
 	"github.com/chia-network/github-bot/internal/config"
 	github2 "github.com/chia-network/github-bot/internal/github"
+	log "github.com/chia-network/github-bot/internal/logger"
 )
 
 // PullRequests applies internal or community labels to pull requests
@@ -20,10 +20,10 @@ func PullRequests(githubClient *github.Client, cfg *config.Config) error {
 	}
 
 	for _, fullRepo := range cfg.CheckRepos {
-		log.Println("Checking repository:", fullRepo.Name)
+		log.Logger.Info("Checking repository", "repository", fullRepo.Name)
 		parts := strings.Split(fullRepo.Name, "/")
 		if len(parts) != 2 {
-			log.Printf("invalid repository name - must contain owner and repository: %s", fullRepo.Name)
+			log.Logger.Error("Invalid repository name - must contain owner and repository", "repository", fullRepo.Name)
 			continue
 		}
 		owner, repo := parts[0], parts[1]
@@ -43,11 +43,11 @@ func PullRequests(githubClient *github.Client, cfg *config.Config) error {
 				label = cfg.LabelExternal
 			}
 			if label != "" {
-				log.Printf("Pull Request %d by %s will be labeled %s\n", *pullRequest.Number, user, label)
+				log.Logger.Info("Labeling pull request", "PR", *pullRequest.Number, "user", user, "label", label)
 				hasLabel := false
 				for _, existingLabel := range pullRequest.Labels {
 					if *existingLabel.Name == label {
-						log.Println("Already labeled, skipping...")
+						log.Logger.Info("Already labeled, skipping", "PR", *pullRequest.Number, "label", label)
 						hasLabel = true
 						break
 					}

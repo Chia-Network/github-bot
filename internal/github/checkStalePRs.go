@@ -3,13 +3,13 @@ package github
 import (
 	"context"
 	"fmt"
-	"log"
 	"strings"
 	"time"
 
 	"github.com/google/go-github/v60/github"
 
 	"github.com/chia-network/github-bot/internal/config"
+	log "github.com/chia-network/github-bot/internal/logger"
 )
 
 // CheckStalePRs will return a list of PR URLs that have not been updated in the last 7 days by internal team members.
@@ -22,7 +22,7 @@ func CheckStalePRs(ctx context.Context, githubClient *github.Client, cfg *config
 	}
 
 	for _, fullRepo := range cfg.CheckRepos {
-		log.Println("Checking repository:", fullRepo.Name)
+		log.Logger.Info("Checking repository", "repository", fullRepo.Name)
 		parts := strings.Split(fullRepo.Name, "/")
 		if len(parts) != 2 {
 			return nil, fmt.Errorf("invalid repository name - must contain owner and repository: %s", fullRepo.Name)
@@ -35,10 +35,11 @@ func CheckStalePRs(ctx context.Context, githubClient *github.Client, cfg *config
 		}
 
 		for _, pr := range communityPRs {
-			repoName := pr.GetBase().GetRepo().GetFullName()                      // Get the full name of the repository
+			repoName := pr.GetBase().GetRepo().GetFullName() // Get the full name of the repository
+			log.Logger.Info("Checking PR", "PR", pr.GetHTMLURL())
 			stale, err := isStale(ctx, githubClient, pr, teamMembers, cutoffDate) // Handle both returned values
 			if err != nil {
-				log.Printf("Error checking if PR in repo %s is stale: %v", repoName, err)
+				log.Logger.Error("Error checking if PR is stale", "repository", repoName, "error", err)
 				continue // Skip this PR or handle the error appropriately
 			}
 			if stale {
@@ -58,7 +59,8 @@ func isStale(ctx context.Context, githubClient *github.Client, pr *github.PullRe
 		defer staleCancel()
 		events, resp, err := githubClient.Issues.ListIssueTimeline(staleCtx, pr.Base.Repo.Owner.GetLogin(), pr.Base.Repo.GetName(), pr.GetNumber(), listOptions)
 		if err != nil {
-			return false, fmt.Errorf("failed to get timeline for PR #%d of repo %s: %w", pr.GetNumber(), pr.Base.Repo.GetName(), err)
+			log.Logger.Error("Failed to get timeline for PR", "PR", pr.GetNumber(), "repository", pr.Base.Repo.GetName(), "error", err)
+			return false, err
 		}
 		for _, event := range events {
 			if event.Event == nil || event.Actor == nil || event.Actor.Login == nil {
