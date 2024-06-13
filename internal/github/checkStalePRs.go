@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"strings"
 	"time"
 
 	"github.com/google/go-github/v60/github"
@@ -14,25 +15,35 @@ import (
 // CheckStalePRs will return a list of PR URLs that have not been updated in the last 7 days by internal team members.
 func CheckStalePRs(ctx context.Context, githubClient *github.Client, cfg *config.Config) ([]string, error) {
 	var stalePRUrls []string
-	cutoffDate := time.Now().Add(7 * 24 * time.Hour) // 7 days ago
+	cutoffDate := time.Now().Add(-7 * 24 * time.Hour) // 7 days ago
 	teamMembers, err := GetTeamMemberList(githubClient, cfg.InternalTeam)
 	if err != nil {
 		return nil, err
 	}
-	communityPRs, err := FindCommunityPRs(cfg, teamMembers, githubClient)
-	if err != nil {
-		return nil, err
-	}
 
-	for _, pr := range communityPRs {
-		repoName := pr.GetBase().GetRepo().GetFullName()                      // Get the full name of the repository
-		stale, err := isStale(ctx, githubClient, pr, teamMembers, cutoffDate) // Handle both returned values
-		if err != nil {
-			log.Printf("Error checking if PR in repo %s is stale: %v", repoName, err)
-			continue // Skip this PR or handle the error appropriately
+	for _, fullRepo := range cfg.CheckRepos {
+		log.Println("Checking repository:", fullRepo.Name)
+		parts := strings.Split(fullRepo.Name, "/")
+		if len(parts) != 2 {
+			return nil, fmt.Errorf("invalid repository name - must contain owner and repository: %s", fullRepo.Name)
 		}
-		if stale {
-			stalePRUrls = append(stalePRUrls, pr.GetHTMLURL()) // Append if PR is confirmed stale
+		owner, repo := parts[0], parts[1]
+
+		communityPRs, err := FindCommunityPRs(cfg, teamMembers, githubClient, owner, repo, fullRepo.MinimumNumber)
+		if err != nil {
+			return nil, err
+		}
+
+		for _, pr := range communityPRs {
+			repoName := pr.GetBase().GetRepo().GetFullName()                      // Get the full name of the repository
+			stale, err := isStale(ctx, githubClient, pr, teamMembers, cutoffDate) // Handle both returned values
+			if err != nil {
+				log.Printf("Error checking if PR in repo %s is stale: %v", repoName, err)
+				continue // Skip this PR or handle the error appropriately
+			}
+			if stale {
+				stalePRUrls = append(stalePRUrls, pr.GetHTMLURL()) // Append if PR is confirmed stale
+			}
 		}
 	}
 	return stalePRUrls, nil
@@ -43,9 +54,9 @@ func isStale(ctx context.Context, githubClient *github.Client, pr *github.PullRe
 	listOptions := &github.ListOptions{PerPage: 100}
 	for {
 		// Create a context for each request
-		ctx, cancel := context.WithTimeout(ctx, 30*time.Second) // 30 seconds timeout for each request
-		defer cancel()
-		events, resp, err := githubClient.Issues.ListIssueTimeline(ctx, pr.Base.Repo.Owner.GetLogin(), pr.Base.Repo.GetName(), pr.GetNumber(), listOptions)
+		staleCtx, staleCancel := context.WithTimeout(ctx, 30*time.Second) // 30 seconds timeout for each request
+		defer staleCancel()
+		events, resp, err := githubClient.Issues.ListIssueTimeline(staleCtx, pr.Base.Repo.Owner.GetLogin(), pr.Base.Repo.GetName(), pr.GetNumber(), listOptions)
 		if err != nil {
 			return false, fmt.Errorf("failed to get timeline for PR #%d of repo %s: %w", pr.GetNumber(), pr.Base.Repo.GetName(), err)
 		}
@@ -57,7 +68,7 @@ func isStale(ctx context.Context, githubClient *github.Client, pr *github.PullRe
 				return false, nil
 			}
 		}
-		cancel() // Clean up the context at the end of the loop iteration
+		staleCancel() // Clean up the context at the end of the loop iteration
 		if resp.NextPage == 0 {
 			break
 		}
