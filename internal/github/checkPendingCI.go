@@ -3,13 +3,13 @@ package github
 import (
 	"context"
 	"fmt"
-	"log"
 	"strings"
 	"time"
 
 	"github.com/google/go-github/v60/github" // Ensure your go-github library version matches
 
 	"github.com/chia-network/github-bot/internal/config"
+	log "github.com/chia-network/github-bot/internal/logger"
 )
 
 // CheckForPendingCI returns a list of PR URLs that are ready for CI to run but haven't started yet.
@@ -18,10 +18,10 @@ func CheckForPendingCI(ctx context.Context, githubClient *github.Client, cfg *co
 	var pendingPRs []string
 
 	for _, fullRepo := range cfg.CheckRepos {
-		log.Println("Checking repository:", fullRepo.Name)
+		log.Logger.Info("Checking repository", "repository", fullRepo.Name)
 		parts := strings.Split(fullRepo.Name, "/")
 		if len(parts) != 2 {
-			log.Printf("invalid repository name - must contain owner and repository: %s", fullRepo.Name)
+			log.Logger.Error("Invalid repository name - must contain owner and repository", "repository", fullRepo.Name)
 			continue
 		}
 		owner, repo := parts[0], parts[1]
@@ -38,29 +38,29 @@ func CheckForPendingCI(ctx context.Context, githubClient *github.Client, cfg *co
 			// Dynamic cutoff time based on the last commit to the PR
 			lastCommitTime, err := getLastCommitTime(prctx, githubClient, owner, repo, pr.GetNumber())
 			if err != nil {
-				log.Printf("Error retrieving last commit time for PR #%d in %s/%s: %v", pr.GetNumber(), owner, repo, err)
+				log.Logger.Error("Error retrieving last commit time", "PR", pr.GetNumber(), "repository", fullRepo.Name, "error", err)
 				continue
 			}
 			cutoffTime := lastCommitTime.Add(2 * time.Hour) // 2 hours after the last commit
 
 			if time.Now().Before(cutoffTime) {
-				log.Printf("Skipping PR #%d from %s/%s repo as it's still within the 2-hour window from the last commit.", pr.GetNumber(), owner, repo)
+				log.Logger.Info("Skipping PR as it's still within the 2-hour window from the last commit", "PR", pr.GetNumber(), "repository", fullRepo.Name)
 				continue
 			}
 
 			hasCIRuns, err := checkCIStatus(prctx, githubClient, owner, repo, pr.GetNumber())
 			if err != nil {
-				log.Printf("Error checking CI status for PR #%d in %s/%s: %v", pr.GetNumber(), owner, repo, err)
+				log.Logger.Error("Error checking CI status", "PR", pr.GetNumber(), "repository", fullRepo.Name, "error", err)
 				continue
 			}
 
 			teamMemberActivity, err := checkTeamMemberActivity(prctx, githubClient, owner, repo, pr.GetNumber(), teamMembers, lastCommitTime)
 			if err != nil {
-				log.Printf("Error checking team member activity for PR #%d in %s/%s: %v", pr.GetNumber(), owner, repo, err)
+				log.Logger.Error("Error checking team member activity", "PR", pr.GetNumber(), "repository", fullRepo.Name, "error", err)
 				continue // or handle the error as needed
 			}
 			if !hasCIRuns && !teamMemberActivity {
-				log.Printf("PR #%d in %s/%s by %s is ready for CI since %v but no CI actions have started yet, or it requires re-approval.", pr.GetNumber(), owner, repo, pr.User.GetLogin(), pr.CreatedAt)
+				log.Logger.Info("PR is ready for CI but no CI actions have started yet, or it requires re-approval", "PR", pr.GetNumber(), "repository", fullRepo.Name, "user", pr.User.GetLogin(), "created_at", pr.CreatedAt)
 				pendingPRs = append(pendingPRs, pr.GetHTMLURL())
 			}
 		}
@@ -85,7 +85,7 @@ func getLastCommitTime(ctx context.Context, client *github.Client, owner, repo s
 	if commitTime == nil {
 		return time.Time{}, fmt.Errorf("commit time is nil for PR #%d of repo %s", prNumber, repo)
 	}
-	log.Printf("The last commit time is %s for PR #%d of repo %s", commitTime.Format(time.RFC3339), prNumber, repo)
+	log.Logger.Info("The last commit time", "time", commitTime.Format(time.RFC3339), "PR", prNumber, "repository", repo)
 
 	return *commitTime, nil // Safely dereference *time.Time to get time.Time
 }
@@ -119,9 +119,9 @@ func checkTeamMemberActivity(ctx context.Context, client *github.Client, owner, 
 	}
 
 	for _, comment := range comments {
-		log.Printf("Checking comment by %s at %s for PR #%d of repo %s", comment.User.GetLogin(), comment.CreatedAt.Format(time.RFC3339), prNumber, repo)
+		log.Logger.Info("Checking comment by team member", "user", comment.User.GetLogin(), "created_at", comment.CreatedAt.Format(time.RFC3339), "PR", prNumber, "repository", repo)
 		if _, ok := teamMembers[comment.User.GetLogin()]; ok && comment.CreatedAt.After(lastCommitTime) {
-			log.Printf("Found team member comment after last commit time: %s for PR #%d of repo %s", comment.CreatedAt.Format(time.RFC3339), prNumber, repo)
+			log.Logger.Info("Found team member comment after last commit time", "time", comment.CreatedAt.Format(time.RFC3339), "PR", prNumber, "repository", repo)
 			// Check if the comment is after the last commit
 			return true, nil // Active and relevant participation
 		}
