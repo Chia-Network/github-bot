@@ -59,7 +59,7 @@ func isStale(ctx context.Context, githubClient *github.Client, pr *github.PullRe
 		defer staleCancel()
 		events, resp, err := githubClient.Issues.ListIssueTimeline(staleCtx, pr.Base.Repo.Owner.GetLogin(), pr.Base.Repo.GetName(), pr.GetNumber(), listOptions)
 		if err != nil {
-			log.Logger.Error("Failed to get timeline for PR", "PR", pr.GetNumber(), "Repository", pr.Base.Repo.GetName(), "error", err)
+			log.Logger.Error("Failed to get timeline for PR", "PR", pr.GetNumber(), "repository", pr.Base.Repo.GetName(), "error", err)
 			return false, err
 		}
 		for _, event := range events {
