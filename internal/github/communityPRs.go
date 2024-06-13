@@ -3,8 +3,6 @@ package github
 import (
 	"context"
 	"fmt"
-	"log"
-	"strings"
 
 	"github.com/google/go-github/v60/github"
 
@@ -12,7 +10,7 @@ import (
 )
 
 // FindCommunityPRs obtains PRs based on provided filters
-func FindCommunityPRs(cfg *config.Config, teamMembers map[string]bool, githubClient *github.Client) ([]*github.PullRequest, error) {
+func FindCommunityPRs(cfg *config.Config, teamMembers map[string]bool, githubClient *github.Client, owner string, repo string, minimumNumber int) ([]*github.PullRequest, error) {
 	var finalPRs []*github.PullRequest
 	opts := &github.PullRequestListOptions{
 		State:     "open",
@@ -24,38 +22,29 @@ func FindCommunityPRs(cfg *config.Config, teamMembers map[string]bool, githubCli
 		},
 	}
 
-	for _, fullRepo := range cfg.CheckRepos {
-		log.Println("Checking repository:", fullRepo.Name)
-		parts := strings.Split(fullRepo.Name, "/")
-		if len(parts) != 2 {
-			return nil, fmt.Errorf("invalid repository name - must contain owner and repository: %s", fullRepo.Name)
+	for {
+		pullRequests, resp, err := githubClient.PullRequests.List(context.Background(), owner, repo, opts)
+		if err != nil {
+			return nil, fmt.Errorf("error listing pull requests for %s/%s: %w", owner, repo, err)
 		}
-		owner, repo := parts[0], parts[1]
 
-		for {
-			pullRequests, resp, err := githubClient.PullRequests.List(context.TODO(), owner, repo, opts)
-			if err != nil {
-				return nil, fmt.Errorf("error listing pull requests for %s/%s: %w", owner, repo, err)
+		for _, pullRequest := range pullRequests {
+			if *pullRequest.Number < minimumNumber {
+				break
 			}
-
-			for _, pullRequest := range pullRequests {
-				if *pullRequest.Number < fullRepo.MinimumNumber {
-					break
-				}
-				if *pullRequest.Draft {
-					continue
-				}
-				user := *pullRequest.User.Login
-				if !teamMembers[user] && !cfg.SkipUsersMap[user] {
-					finalPRs = append(finalPRs, pullRequest)
-				}
+			if *pullRequest.Draft {
+				continue
 			}
-
-			if resp.NextPage == 0 {
-				break // Exit the loop if there are no more pages
+			user := *pullRequest.User.Login
+			if !teamMembers[user] && !cfg.SkipUsersMap[user] {
+				finalPRs = append(finalPRs, pullRequest)
 			}
-			opts.Page = resp.NextPage // Set next page number
 		}
+
+		if resp.NextPage == 0 {
+			break // Exit the loop if there are no more pages
+		}
+		opts.Page = resp.NextPage // Set next page number
 	}
 	return finalPRs, nil
 }

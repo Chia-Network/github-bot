@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"log"
-	"strconv"
 	"strings"
 	"time"
 
@@ -28,16 +27,16 @@ func CheckForPendingCI(ctx context.Context, githubClient *github.Client, cfg *co
 		owner, repo := parts[0], parts[1]
 
 		// Fetch community PRs using the FindCommunityPRs function
-		communityPRs, err := FindCommunityPRs(cfg, teamMembers, githubClient)
+		communityPRs, err := FindCommunityPRs(cfg, teamMembers, githubClient, owner, repo, fullRepo.MinimumNumber)
 		if err != nil {
 			return nil, err
 		}
 
 		for _, pr := range communityPRs {
-			ctx, cancel := context.WithTimeout(ctx, 30*time.Second) // 30 seconds timeout for each request
-			defer cancel()
+			prctx, prcancel := context.WithTimeout(ctx, 30*time.Second) // 30 seconds timeout for each request
+			defer prcancel()
 			// Dynamic cutoff time based on the last commit to the PR
-			lastCommitTime, err := getLastCommitTime(ctx, githubClient, owner, repo, pr.GetNumber())
+			lastCommitTime, err := getLastCommitTime(prctx, githubClient, owner, repo, pr.GetNumber())
 			if err != nil {
 				log.Printf("Error retrieving last commit time for PR #%d in %s/%s: %v", pr.GetNumber(), owner, repo, err)
 				continue
@@ -49,18 +48,18 @@ func CheckForPendingCI(ctx context.Context, githubClient *github.Client, cfg *co
 				continue
 			}
 
-			hasCIRuns, err := checkCIStatus(ctx, githubClient, owner, repo, pr.GetNumber())
+			hasCIRuns, err := checkCIStatus(prctx, githubClient, owner, repo, pr.GetNumber())
 			if err != nil {
 				log.Printf("Error checking CI status for PR #%d in %s/%s: %v", pr.GetNumber(), owner, repo, err)
 				continue
 			}
 
-			teamMemberActivity, err := checkTeamMemberActivity(ctx, githubClient, owner, repo, pr.GetNumber(), teamMembers, lastCommitTime)
+			teamMemberActivity, err := checkTeamMemberActivity(prctx, githubClient, owner, repo, pr.GetNumber(), teamMembers, lastCommitTime)
 			if err != nil {
 				log.Printf("Error checking team member activity for PR #%d in %s/%s: %v", pr.GetNumber(), owner, repo, err)
 				continue // or handle the error as needed
 			}
-			if !hasCIRuns || !teamMemberActivity {
+			if !hasCIRuns && !teamMemberActivity {
 				log.Printf("PR #%d in %s/%s by %s is ready for CI since %v but no CI actions have started yet, or it requires re-approval.", pr.GetNumber(), owner, repo, pr.User.GetLogin(), pr.CreatedAt)
 				pendingPRs = append(pendingPRs, pr.GetHTMLURL())
 			}
@@ -92,10 +91,24 @@ func getLastCommitTime(ctx context.Context, client *github.Client, owner, repo s
 }
 
 func checkCIStatus(ctx context.Context, client *github.Client, owner, repo string, prNumber int) (bool, error) {
-	checks, _, err := client.Checks.ListCheckRunsForRef(ctx, owner, repo, strconv.Itoa(prNumber), &github.ListCheckRunsOptions{})
+	pr, _, err := client.PullRequests.Get(ctx, owner, repo, prNumber)
 	if err != nil {
-		return false, err
+		return false, fmt.Errorf("failed to fetch pull request #%d: %w", prNumber, err)
 	}
+	// Obtaining CI runs for the most recent commit
+	commitSHA := pr.GetHead().GetSHA()
+
+	checks, _, err := client.Checks.ListCheckRunsForRef(ctx, owner, repo, commitSHA, &github.ListCheckRunsOptions{})
+	if err != nil {
+		return false, fmt.Errorf("failed to fetch check runs for ref %s: %w", commitSHA, err)
+	}
+	// Potentially add logic later for checking for passing CI
+	/*
+		for _, checkRun := range checks.CheckRuns {
+		if checkRun.GetStatus() != "completed" || checkRun.GetConclusion() != "success" {
+			return false, nil // There are check runs that are not completed or not successful
+		}
+	*/
 	return checks.GetTotal() > 0, nil
 }
 
