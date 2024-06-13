@@ -43,11 +43,11 @@ func PullRequests(githubClient *github.Client, cfg *config.Config) error {
 				label = cfg.LabelExternal
 			}
 			if label != "" {
-				log.Logger.Info("Labeling pull request", "PR Number", *pullRequest.Number, "user", user, "label", label)
+				log.Logger.Info("Labeling pull request", "PR", *pullRequest.Number, "user", user, "label", label)
 				hasLabel := false
 				for _, existingLabel := range pullRequest.Labels {
 					if *existingLabel.Name == label {
-						log.Logger.Info("Already labeled, skipping", "PR Number", *pullRequest.Number, "label", label)
+						log.Logger.Info("Already labeled, skipping", "PR", *pullRequest.Number, "label", label)
 						hasLabel = true
 						break
 					}

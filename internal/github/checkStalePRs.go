@@ -39,7 +39,7 @@ func CheckStalePRs(ctx context.Context, githubClient *github.Client, cfg *config
 			log.Logger.Info("Checking PR", "PR", pr.GetHTMLURL())
 			stale, err := isStale(ctx, githubClient, pr, teamMembers, cutoffDate) // Handle both returned values
 			if err != nil {
-				log.Logger.Error("Error checking if PR is stale", "repo", repoName, "error", err)
+				log.Logger.Error("Error checking if PR is stale", "repository", repoName, "error", err)
 				continue // Skip this PR or handle the error appropriately
 			}
 			if stale {
@@ -59,7 +59,7 @@ func isStale(ctx context.Context, githubClient *github.Client, pr *github.PullRe
 		defer staleCancel()
 		events, resp, err := githubClient.Issues.ListIssueTimeline(staleCtx, pr.Base.Repo.Owner.GetLogin(), pr.Base.Repo.GetName(), pr.GetNumber(), listOptions)
 		if err != nil {
-			log.Logger.Error("Failed to get timeline for PR", "PR Number", pr.GetNumber(), "Repo", pr.Base.Repo.GetName(), "error", err)
+			log.Logger.Error("Failed to get timeline for PR", "PR", pr.GetNumber(), "Repository", pr.Base.Repo.GetName(), "error", err)
 			return false, err
 		}
 		for _, event := range events {
