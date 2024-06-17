@@ -8,6 +8,13 @@ deployment:
     - notify-pendingci
     - --loop
 
+secretEnvironment:
+  GITHUB_BOT_DB_HOST: "{{ DB_HOST }}"
+  GITHUB_BOT_DB_USER: "{{ DB_USER }}"
+  GITHUB_BOT_DB_PASS: "{{ DB_PASS }}"
+  GITHUB_BOT_DB_NAME: "github-bot"
+
+
 # Creates a secret with the following values, and mounts as a file into the main deployment container
 secretFile:
   mountPath: "/config"

@@ -9,11 +9,12 @@ import (
 	"os"
 )
 
+// WebhookMessage represents the message to be sent to the Keybase webhook.
 type WebhookMessage struct {
 	Message string `json:"message"`
 }
 
-// SendKeybaseMessage sends a message to a specified Keybase channel
+// SendKeybaseMsg sends a message to a specified Keybase channel
 func SendKeybaseMsg(message string) error {
 	webhookURL := os.Getenv("KEYBASE_WEBHOOK_URL")
 	if webhookURL == "" {
@@ -33,10 +34,14 @@ func SendKeybaseMsg(message string) error {
 		log.Printf("Error sending message: %v", err)
 		return err
 	}
-	defer resp.Body.Close()
+	defer func() {
+		if err := resp.Body.Close(); err != nil {
+			log.Printf("error closing response body: %v", err)
+		}
+	}()
 
 	if resp.StatusCode != http.StatusOK {
-		return fmt.Errorf("Received error response: %s", resp.Status)
+		return fmt.Errorf("received error response: %s", resp.Status)
 	}
 
 	log.Printf("Message successfully sent")

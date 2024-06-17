@@ -21,9 +21,3 @@ type CheckRepo struct {
 	Name          string `yaml:"name"`
 	MinimumNumber int    `yaml:"minimum_number"`
 }
-
-type KeybaseBot struct {
-	KeybaseUsername string
-	KeybasePaperkey string
-	ChannelName     string
-}
