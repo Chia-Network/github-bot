@@ -31,16 +31,31 @@ func init() {
 		cfgFile  string
 		loop     bool
 		loopTime time.Duration
+		dbHost   string
+		dbPort   uint16
+		dbUser   string
+		dbPass   string
+		dbName   string
 	)
 
 	cobra.OnInitialize(initConfig)
 	rootCmd.PersistentFlags().StringVar(&cfgFile, "config", "config.yml", "config file to load")
 	rootCmd.PersistentFlags().BoolVar(&loop, "loop", false, "Use this var to periodically check on a loop")
 	rootCmd.PersistentFlags().DurationVar(&loopTime, "loop-time", 1*time.Hour, "The amount of time to wait between each iteration of the loop")
+	rootCmd.PersistentFlags().StringVar(&dbHost, "db-host", "127.0.0.1", "Hostname for MySQL")
+	rootCmd.PersistentFlags().Uint16Var(&dbPort, "db-port", 3306, "Port for MySQL")
+	rootCmd.PersistentFlags().StringVar(&dbUser, "db-user", "root", "User for MySQL")
+	rootCmd.PersistentFlags().StringVar(&dbPass, "db-pass", "root_password", "Password for MySQL")
+	rootCmd.PersistentFlags().StringVar(&dbName, "db-name", "github-bot", "Database name in MySQL")
 
 	cobra.CheckErr(viper.BindPFlag("config", rootCmd.PersistentFlags().Lookup("config")))
 	cobra.CheckErr(viper.BindPFlag("loop", rootCmd.PersistentFlags().Lookup("loop")))
 	cobra.CheckErr(viper.BindPFlag("loop-time", rootCmd.PersistentFlags().Lookup("loop-time")))
+	cobra.CheckErr(viper.BindPFlag("db-host", rootCmd.PersistentFlags().Lookup("db-host")))
+	cobra.CheckErr(viper.BindPFlag("db-port", rootCmd.PersistentFlags().Lookup("db-port")))
+	cobra.CheckErr(viper.BindPFlag("db-user", rootCmd.PersistentFlags().Lookup("db-user")))
+	cobra.CheckErr(viper.BindPFlag("db-pass", rootCmd.PersistentFlags().Lookup("db-pass")))
+	cobra.CheckErr(viper.BindPFlag("db-name", rootCmd.PersistentFlags().Lookup("db-name")))
 }
 
 // initConfig reads in config file and ENV variables if set.

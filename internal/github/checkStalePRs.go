@@ -12,9 +12,16 @@ import (
 	log "github.com/chia-network/github-bot/internal/logger"
 )
 
+// StalePR holds information about pending PRs
+type StalePR struct {
+	Repo     string
+	PRNumber int
+	URL      string
+}
+
 // CheckStalePRs will return a list of PR URLs that have not been updated in the last 7 days by internal team members.
-func CheckStalePRs(ctx context.Context, githubClient *github.Client, cfg *config.Config) ([]string, error) {
-	var stalePRUrls []string
+func CheckStalePRs(ctx context.Context, githubClient *github.Client, cfg *config.Config) ([]StalePR, error) {
+	var stalePRs []StalePR
 	cutoffDate := time.Now().Add(-7 * 24 * time.Hour) // 7 days ago
 	teamMembers, err := GetTeamMemberList(githubClient, cfg.InternalTeam)
 	if err != nil {
@@ -43,11 +50,21 @@ func CheckStalePRs(ctx context.Context, githubClient *github.Client, cfg *config
 				continue // Skip this PR or handle the error appropriately
 			}
 			if stale {
-				stalePRUrls = append(stalePRUrls, pr.GetHTMLURL()) // Append if PR is confirmed stale
+				log.Logger.Info("PR is has no team member within the last seven days", "PR", pr.GetNumber(), "repository", fullRepo.Name, "user", pr.User.GetLogin(), "created_at", pr.CreatedAt)
+				stalePRs = append(stalePRs, StalePR{
+					Repo:     repo,
+					PRNumber: pr.GetNumber(),
+					URL:      pr.GetHTMLURL(),
+				})
+			} else {
+				log.Logger.Info("PR is not stale",
+					"PR", pr.GetNumber(),
+					"repository", fullRepo.Name)
 			}
 		}
 	}
-	return stalePRUrls, nil
+
+	return stalePRs, nil
 }
 
 // Checks if a PR is stale based on the last update from team members

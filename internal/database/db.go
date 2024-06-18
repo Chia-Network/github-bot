@@ -101,9 +101,10 @@ func (d *Datastore) GetPRData(repo string, prNumber int64) (*PRInfo, error) {
 
 	// Variable to store the results
 	var prInfo PRInfo
+	var lastMessageSentStr string
 
 	// Execute the query
-	err := d.mysqlClient.QueryRow(query, repo, prNumber).Scan(&prInfo.Repo, &prInfo.PRNumber, &prInfo.LastMessageSent)
+	err := d.mysqlClient.QueryRow(query, repo, prNumber).Scan(&prInfo.Repo, &prInfo.PRNumber, &lastMessageSentStr)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			// Handle no rows returned case here if needed
@@ -112,6 +113,13 @@ func (d *Datastore) GetPRData(repo string, prNumber int64) (*PRInfo, error) {
 		// Handle other errors
 		return nil, fmt.Errorf("error querying PR info: %v", err)
 	}
+
+	// Parse the last_message_sent string to time.Time. Reference date is used here.
+	lastMessageSent, err := time.Parse("2006-01-02 15:04:05", lastMessageSentStr)
+	if err != nil {
+		return nil, fmt.Errorf("error parsing last_message_sent: %v", err)
+	}
+	prInfo.LastMessageSent = lastMessageSent
 
 	// Return the fetched data
 	return &prInfo, nil

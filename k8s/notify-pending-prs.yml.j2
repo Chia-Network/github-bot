@@ -8,13 +8,6 @@ deployment:
     - notify-pendingci
     - --loop
 
-secretEnvironment:
-  GITHUB_BOT_DB_HOST: "{{ DB_HOST }}"
-  GITHUB_BOT_DB_USER: "{{ DB_USER }}"
-  GITHUB_BOT_DB_PASS: "{{ DB_PASS }}"
-  GITHUB_BOT_DB_NAME: "github-bot"
-
-
 # Creates a secret with the following values, and mounts as a file into the main deployment container
 secretFile:
   mountPath: "/config"
@@ -27,6 +20,16 @@ secretFile:
           minimum_number: 17788
         - name: "Chia-Network/chia-blockchain-gui"
           minimum_number: 2300
+        - name: "pattesting1/bot-testing"
+          minimum_number: 0
       skip_users:
         - "dependabot[bot]"
         - "github-actions[bot]"
+        - "socket-security[bot]"
+        - "github-actions[bot]"
+
+secretEnvironment:
+  GITHUB_BOT_DB_HOST: "{{ DB_HOST }}"
+  GITHUB_BOT_DB_USER: "{{ DB_USER }}"
+  GITHUB_BOT_DB_PASS: "{{ DB_PASS }}"
+  GITHUB_BOT_DB_NAME: "github-bot"

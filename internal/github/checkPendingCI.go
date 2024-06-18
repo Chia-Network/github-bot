@@ -20,7 +20,6 @@ type PendingPR struct {
 }
 
 // CheckForPendingCI returns a list of PR URLs that are ready for CI to run but haven't started yet.
-
 func CheckForPendingCI(ctx context.Context, githubClient *github.Client, cfg *config.Config) ([]PendingPR, error) {
 	teamMembers, _ := GetTeamMemberList(githubClient, cfg.InternalTeam)
 	var pendingPRs []PendingPR
@@ -68,14 +67,19 @@ func CheckForPendingCI(ctx context.Context, githubClient *github.Client, cfg *co
 				continue // or handle the error as needed
 			}
 
-			if !hasCIRuns || !teamMemberActivity {
-				log.Logger.Info("PR is ready for CI but no CI actions have started yet, or it requires re-approval", "PR", pr.GetNumber(), "repository", fullRepo.Name, "user", pr.User.GetLogin(), "created_at", pr.CreatedAt)
+			if !hasCIRuns && !teamMemberActivity {
+				log.Logger.Info("PR is ready for CI and no CI actions have started yet, or it requires re-approval", "PR", pr.GetNumber(), "repository", fullRepo.Name, "user", pr.User.GetLogin(), "created_at", pr.CreatedAt)
 				pendingPRs = append(pendingPRs, PendingPR{
 					Repo:     repo,
 					PRNumber: pr.GetNumber(),
 					URL:      pr.GetHTMLURL(),
 				})
+			} else {
+				log.Logger.Info("PR is not ready for CI approvals",
+					"PR", pr.GetNumber(),
+					"repository", fullRepo.Name)
 			}
+
 		}
 	}
 	return pendingPRs, nil

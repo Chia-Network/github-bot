@@ -34,6 +34,7 @@ var notifyPendingCICmd = &cobra.Command{
 			viper.GetString("db-name"),
 			"pending_ci_status",
 		)
+
 		if err != nil {
 			log.Printf("[ERROR] Could not initialize mysql connection: %s", err.Error())
 			return
@@ -64,6 +65,7 @@ var notifyPendingCICmd = &cobra.Command{
 				shouldSendMessage := false
 				if prInfo == nil {
 					// New PR, record it and send a message
+					log.Printf("Storing data in db")
 					err := datastore.StorePRData(pr.Repo, int64(pr.PRNumber))
 					if err != nil {
 						log.Printf("Error storing PR data: %v", err)
@@ -72,6 +74,7 @@ var notifyPendingCICmd = &cobra.Command{
 					shouldSendMessage = true
 				} else if time.Since(prInfo.LastMessageSent) > sendMsgDuration {
 					// 24 hours has elapsed since the last message was issues, update the record and send a message
+					log.Printf("Storing data in db")
 					err := datastore.StorePRData(pr.Repo, int64(pr.PRNumber))
 					if err != nil {
 						log.Printf("Error updating PR data: %v", err)
@@ -82,6 +85,7 @@ var notifyPendingCICmd = &cobra.Command{
 
 				if shouldSendMessage {
 					message := fmt.Sprintf("The following pull request is waiting for approval for CI checks to run: %s", pr.URL)
+					log.Printf("Sending message via keybase")
 					if err := keybase.SendKeybaseMsg(message); err != nil {
 						log.Printf("Failed to send message: %s", err)
 					} else {
