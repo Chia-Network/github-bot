@@ -1,7 +1,6 @@
 package cmd
 
 import (
-	"log"
 	"time"
 
 	"github.com/google/go-github/v60/github"
@@ -10,6 +9,7 @@ import (
 
 	"github.com/chia-network/github-bot/internal/config"
 	"github.com/chia-network/github-bot/internal/label"
+	log "github.com/chia-network/github-bot/internal/logger"
 )
 
 // labelPRsCmd represents the labelPRs command
@@ -19,24 +19,24 @@ var labelPRsCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		cfg, err := config.LoadConfig(viper.GetString("config"))
 		if err != nil {
-			log.Fatalf("error loading config: %s\n", err.Error())
+			log.Logger.Error("Error loading config", "error", err)
 		}
 		client := github.NewClient(nil).WithAuthToken(cfg.GithubToken)
 
 		loop := viper.GetBool("loop")
 		loopDuration := viper.GetDuration("loop-time")
 		for {
-			log.Println("Labeling Pull Requests")
+			log.Logger.Info("Labeling Pull Requests")
 			err = label.PullRequests(client, cfg)
 			if err != nil {
-				log.Fatalln(err.Error())
+				log.Logger.Error("Error labeling pull requests", "error", err)
 			}
 
 			if !loop {
 				break
 			}
 
-			log.Printf("Waiting %s for next iteration\n", loopDuration.String())
+			log.Logger.Info("Waiting for next iteration", "duration", loopDuration.String())
 			time.Sleep(loopDuration)
 		}
 	},

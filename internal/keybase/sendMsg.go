@@ -4,9 +4,10 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"log"
 	"net/http"
 	"os"
+
+	log "github.com/chia-network/github-bot/internal/logger"
 )
 
 // WebhookMessage represents the message to be sent to the Keybase webhook.
@@ -26,17 +27,17 @@ func SendKeybaseMsg(message string) error {
 	}
 	payloadBytes, err := json.Marshal(payload)
 	if err != nil {
-		log.Printf("Error converting data to a JSON string: %v", err)
+		log.Logger.Error("Error converting data to a JSON string", "error", err)
 	}
 
 	resp, err := http.Post(webhookURL, "application/json", bytes.NewBuffer(payloadBytes))
 	if err != nil {
-		log.Printf("Error sending message: %v", err)
+		log.Logger.Error("Error sending message", "error", err)
 		return err
 	}
 	defer func() {
 		if err := resp.Body.Close(); err != nil {
-			log.Printf("error closing response body: %v", err)
+			log.Logger.Error("Error closing response body", "error", err)
 		}
 	}()
 
@@ -44,6 +45,6 @@ func SendKeybaseMsg(message string) error {
 		return fmt.Errorf("received error response: %s", resp.Status)
 	}
 
-	log.Printf("Message successfully sent")
+	log.Logger.Info("Message successfully sent")
 	return nil
 }
