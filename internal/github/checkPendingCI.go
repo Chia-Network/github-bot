@@ -12,10 +12,17 @@ import (
 	log "github.com/chia-network/github-bot/internal/logger"
 )
 
+// PendingPR holds information about pending PRs
+type PendingPR struct {
+	Repo     string
+	PRNumber int
+	URL      string
+}
+
 // CheckForPendingCI returns a list of PR URLs that are ready for CI to run but haven't started yet.
-func CheckForPendingCI(ctx context.Context, githubClient *github.Client, cfg *config.Config) ([]string, error) {
+func CheckForPendingCI(ctx context.Context, githubClient *github.Client, cfg *config.Config) ([]PendingPR, error) {
 	teamMembers, _ := GetTeamMemberList(githubClient, cfg.InternalTeam)
-	var pendingPRs []string
+	var pendingPRs []PendingPR
 
 	for _, fullRepo := range cfg.CheckRepos {
 		log.Logger.Info("Checking repository", "repository", fullRepo.Name)
@@ -59,10 +66,20 @@ func CheckForPendingCI(ctx context.Context, githubClient *github.Client, cfg *co
 				log.Logger.Error("Error checking team member activity", "PR", pr.GetNumber(), "repository", fullRepo.Name, "error", err)
 				continue // or handle the error as needed
 			}
+
 			if !hasCIRuns && !teamMemberActivity {
-				log.Logger.Info("PR is ready for CI but no CI actions have started yet, or it requires re-approval", "PR", pr.GetNumber(), "repository", fullRepo.Name, "user", pr.User.GetLogin(), "created_at", pr.CreatedAt)
-				pendingPRs = append(pendingPRs, pr.GetHTMLURL())
+				log.Logger.Info("PR is ready for CI and no CI actions have started yet, or it requires re-approval", "PR", pr.GetNumber(), "repository", fullRepo.Name, "user", pr.User.GetLogin(), "created_at", pr.CreatedAt)
+				pendingPRs = append(pendingPRs, PendingPR{
+					Repo:     repo,
+					PRNumber: pr.GetNumber(),
+					URL:      pr.GetHTMLURL(),
+				})
+			} else {
+				log.Logger.Info("PR is not ready for CI approvals",
+					"PR", pr.GetNumber(),
+					"repository", fullRepo.Name)
 			}
+
 		}
 	}
 	return pendingPRs, nil
