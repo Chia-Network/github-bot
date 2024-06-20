@@ -18,6 +18,7 @@ var labelPRsCmd = &cobra.Command{
 	Use:   "label-prs",
 	Short: "Adds community and internal labels to pull requests in designated repos",
 	Run: func(cmd *cobra.Command, args []string) {
+		slogs.Init("info")
 		cfg, err := config.LoadConfig(viper.GetString("config"))
 		if err != nil {
 			slogs.Logger.Error("Error loading config", "error", err)
