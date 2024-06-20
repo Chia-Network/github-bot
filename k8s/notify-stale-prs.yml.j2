@@ -29,7 +29,7 @@ secretFile:
         - "github-actions[bot]"
 
 secretEnvironment:
-  GH_BOT_DATABASE_HOST: "{{ DB_HOST }}"
-  GH_BOT_DATABASE_USERNAME: "{{ GH_BOT_DB_USERNAME }}"
-  GH_BOT_DATABASE_PASSWORD: "{{ GH_BOT_DB_PASSWORD }}"
-  GH_BOT_DATABASE_DBNAME: github-bot
+  GITHUB_BOT_DB_HOST: "{{ DB_HOST }}"
+  GITHUB_BOT_DB_USER: "{{ DB_USER }}"
+  GITHUB_BOT_DB_PASS: "{{ DB_PASS }}"
+  GITHUB_BOT_DB_NAME: "github-bot"
