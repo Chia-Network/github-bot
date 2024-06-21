@@ -3,6 +3,7 @@ module github.com/chia-network/github-bot
 go 1.22.1
 
 require (
+	github.com/chia-network/go-modules v0.0.5
 	github.com/go-sql-driver/mysql v1.4.1
 	github.com/google/go-github/v60 v60.0.0
 	github.com/spf13/cobra v1.8.1
@@ -11,7 +12,6 @@ require (
 )
 
 require (
-	github.com/chia-network/go-modules v0.0.5-0.20240618192947-456240df64f6 // indirect
 	github.com/fsnotify/fsnotify v1.7.0 // indirect
 	github.com/google/go-querystring v1.1.0 // indirect
 	github.com/hashicorp/hcl v1.0.0 // indirect
