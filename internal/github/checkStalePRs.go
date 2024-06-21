@@ -29,7 +29,7 @@ func CheckStalePRs(ctx context.Context, githubClient *github.Client, cfg *config
 	}
 
 	for _, fullRepo := range cfg.CheckRepos {
-		slogs.Logger.Info("Checking repository", "repository", fullRepo.Name)
+		slogs.Logr.Info("Checking repository", "repository", fullRepo.Name)
 		parts := strings.Split(fullRepo.Name, "/")
 		if len(parts) != 2 {
 			return nil, fmt.Errorf("invalid repository name - must contain owner and repository: %s", fullRepo.Name)
@@ -43,21 +43,21 @@ func CheckStalePRs(ctx context.Context, githubClient *github.Client, cfg *config
 
 		for _, pr := range communityPRs {
 			repoName := pr.GetBase().GetRepo().GetFullName() // Get the full name of the repository
-			slogs.Logger.Info("Checking PR", "PR", pr.GetHTMLURL())
+			slogs.Logr.Info("Checking PR", "PR", pr.GetHTMLURL())
 			stale, err := isStale(ctx, githubClient, pr, teamMembers, cutoffDate) // Handle both returned values
 			if err != nil {
-				slogs.Logger.Error("Error checking if PR is stale", "repository", repoName, "error", err)
+				slogs.Logr.Error("Error checking if PR is stale", "repository", repoName, "error", err)
 				continue // Skip this PR or handle the error appropriately
 			}
 			if stale {
-				slogs.Logger.Info("PR is has no team member within the last seven days", "PR", pr.GetNumber(), "repository", fullRepo.Name, "user", pr.User.GetLogin(), "created_at", pr.CreatedAt)
+				slogs.Logr.Info("PR is has no team member within the last seven days", "PR", pr.GetNumber(), "repository", fullRepo.Name, "user", pr.User.GetLogin(), "created_at", pr.CreatedAt)
 				stalePRs = append(stalePRs, StalePR{
 					Repo:     repo,
 					PRNumber: pr.GetNumber(),
 					URL:      pr.GetHTMLURL(),
 				})
 			} else {
-				slogs.Logger.Info("PR is not stale",
+				slogs.Logr.Info("PR is not stale",
 					"PR", pr.GetNumber(),
 					"repository", fullRepo.Name)
 			}
@@ -76,7 +76,7 @@ func isStale(ctx context.Context, githubClient *github.Client, pr *github.PullRe
 		defer staleCancel()
 		events, resp, err := githubClient.Issues.ListIssueTimeline(staleCtx, pr.Base.Repo.Owner.GetLogin(), pr.Base.Repo.GetName(), pr.GetNumber(), listOptions)
 		if err != nil {
-			slogs.Logger.Error("Failed to get timeline for PR", "PR", pr.GetNumber(), "repository", pr.Base.Repo.GetName(), "error", err)
+			slogs.Logr.Error("Failed to get timeline for PR", "PR", pr.GetNumber(), "repository", pr.Base.Repo.GetName(), "error", err)
 			return false, err
 		}
 		for _, event := range events {

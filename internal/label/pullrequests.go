@@ -20,10 +20,10 @@ func PullRequests(githubClient *github.Client, cfg *config.Config) error {
 	}
 
 	for _, fullRepo := range cfg.CheckRepos {
-		slogs.Logger.Info("Checking repository", "repository", fullRepo.Name)
+		slogs.Logr.Info("Checking repository", "repository", fullRepo.Name)
 		parts := strings.Split(fullRepo.Name, "/")
 		if len(parts) != 2 {
-			slogs.Logger.Error("Invalid repository name - must contain owner and repository", "repository", fullRepo.Name)
+			slogs.Logr.Error("Invalid repository name - must contain owner and repository", "repository", fullRepo.Name)
 			continue
 		}
 		owner, repo := parts[0], parts[1]
@@ -43,11 +43,11 @@ func PullRequests(githubClient *github.Client, cfg *config.Config) error {
 				label = cfg.LabelExternal
 			}
 			if label != "" {
-				slogs.Logger.Info("Labeling pull request", "PR", *pullRequest.Number, "user", user, "label", label)
+				slogs.Logr.Info("Labeling pull request", "PR", *pullRequest.Number, "user", user, "label", label)
 				hasLabel := false
 				for _, existingLabel := range pullRequest.Labels {
 					if *existingLabel.Name == label {
-						slogs.Logger.Info("Already labeled, skipping", "PR", *pullRequest.Number, "label", label)
+						slogs.Logr.Info("Already labeled, skipping", "PR", *pullRequest.Number, "label", label)
 						hasLabel = true
 						break
 					}

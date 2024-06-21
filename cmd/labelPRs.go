@@ -21,7 +21,7 @@ var labelPRsCmd = &cobra.Command{
 		slogs.Init("info")
 		cfg, err := config.LoadConfig(viper.GetString("config"))
 		if err != nil {
-			slogs.Logger.Error("Error loading config", "error", err)
+			slogs.Logr.Error("Error loading config", "error", err)
 			os.Exit(1)
 		}
 		client := github.NewClient(nil).WithAuthToken(cfg.GithubToken)
@@ -29,10 +29,10 @@ var labelPRsCmd = &cobra.Command{
 		loop := viper.GetBool("loop")
 		loopDuration := viper.GetDuration("loop-time")
 		for {
-			slogs.Logger.Info("Labeling Pull Requests")
+			slogs.Logr.Info("Labeling Pull Requests")
 			err = label.PullRequests(client, cfg)
 			if err != nil {
-				slogs.Logger.Error("Error labeling pull requests", "error", err)
+				slogs.Logr.Error("Error labeling pull requests", "error", err)
 				os.Exit(1)
 			}
 
@@ -40,7 +40,7 @@ var labelPRsCmd = &cobra.Command{
 				break
 			}
 
-			slogs.Logger.Info("Waiting for next iteration", "duration", loopDuration.String())
+			slogs.Logr.Info("Waiting for next iteration", "duration", loopDuration.String())
 			time.Sleep(loopDuration)
 		}
 	},
