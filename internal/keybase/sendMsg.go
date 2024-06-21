@@ -6,6 +6,8 @@ import (
 	"fmt"
 	"net/http"
 	"os"
+
+	"github.com/chia-network/go-modules/pkg/slogs"
 )
 
 // WebhookMessage represents the message to be sent to the Keybase webhook.
