@@ -1,7 +1,6 @@
 package cmd
 
 import (
-	"os"
 	"time"
 
 	"github.com/chia-network/go-modules/pkg/slogs"
@@ -21,8 +20,7 @@ var labelPRsCmd = &cobra.Command{
 		slogs.Init("info")
 		cfg, err := config.LoadConfig(viper.GetString("config"))
 		if err != nil {
-			slogs.Logr.Error("Error loading config", "error", err)
-			os.Exit(1)
+			slogs.Logr.Fatal("Error loading config", "error", err)
 		}
 		client := github.NewClient(nil).WithAuthToken(cfg.GithubToken)
 
@@ -32,8 +30,7 @@ var labelPRsCmd = &cobra.Command{
 			slogs.Logr.Info("Labeling Pull Requests")
 			err = label.PullRequests(client, cfg)
 			if err != nil {
-				slogs.Logr.Error("Error labeling pull requests", "error", err)
-				os.Exit(1)
+				slogs.Logr.Fatal("Error labeling pull requests", "error", err)
 			}
 
 			if !loop {

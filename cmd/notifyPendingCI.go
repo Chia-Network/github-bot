@@ -3,7 +3,6 @@ package cmd
 import (
 	"context"
 	"fmt"
-	"os"
 	"time"
 
 	"github.com/google/go-github/v60/github"
@@ -25,8 +24,7 @@ var notifyPendingCICmd = &cobra.Command{
 		slogs.Init("info")
 		cfg, err := config.LoadConfig(viper.GetString("config"))
 		if err != nil {
-			slogs.Logr.Error("Error loading config", "error", err)
-			os.Exit(1)
+			slogs.Logr.Fatal("Error loading config", "error", err)
 		}
 		client := github.NewClient(nil).WithAuthToken(cfg.GithubToken)
 
