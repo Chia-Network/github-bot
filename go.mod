@@ -3,6 +3,7 @@ module github.com/chia-network/github-bot
 go 1.22.1
 
 require (
+	github.com/chia-network/go-modules v0.0.5
 	github.com/go-sql-driver/mysql v1.4.1
 	github.com/google/go-github/v60 v60.0.0
 	github.com/spf13/cobra v1.8.1

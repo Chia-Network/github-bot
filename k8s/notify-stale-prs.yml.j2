@@ -26,10 +26,11 @@ secretFile:
         - "dependabot[bot]"
         - "github-actions[bot]"
         - "socket-security[bot]"
-        - "github-actions[bot]"
+
 
 secretEnvironment:
   GITHUB_BOT_DB_HOST: "{{ DB_HOST }}"
   GITHUB_BOT_DB_USER: "{{ DB_USER }}"
   GITHUB_BOT_DB_PASS: "{{ DB_PASS }}"
   GITHUB_BOT_DB_NAME: "github-bot"
+  KEYBASE_WEBHOOK_URL: "{{ KEYBASE_WEBHOOK_URL }}"

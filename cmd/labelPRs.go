@@ -1,9 +1,9 @@
 package cmd
 
 import (
-	"log"
 	"time"
 
+	"github.com/chia-network/go-modules/pkg/slogs"
 	"github.com/google/go-github/v60/github"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
@@ -17,26 +17,27 @@ var labelPRsCmd = &cobra.Command{
 	Use:   "label-prs",
 	Short: "Adds community and internal labels to pull requests in designated repos",
 	Run: func(cmd *cobra.Command, args []string) {
+		slogs.Init("info")
 		cfg, err := config.LoadConfig(viper.GetString("config"))
 		if err != nil {
-			log.Fatalf("error loading config: %s\n", err.Error())
+			slogs.Logr.Fatal("Error loading config", "error", err)
 		}
 		client := github.NewClient(nil).WithAuthToken(cfg.GithubToken)
 
 		loop := viper.GetBool("loop")
 		loopDuration := viper.GetDuration("loop-time")
 		for {
-			log.Println("Labeling Pull Requests")
+			slogs.Logr.Info("Labeling Pull Requests")
 			err = label.PullRequests(client, cfg)
 			if err != nil {
-				log.Fatalln(err.Error())
+				slogs.Logr.Fatal("Error labeling pull requests", "error", err)
 			}
 
 			if !loop {
 				break
 			}
 
-			log.Printf("Waiting %s for next iteration\n", loopDuration.String())
+			slogs.Logr.Info("Waiting for next iteration", "duration", loopDuration.String())
 			time.Sleep(loopDuration)
 		}
 	},
