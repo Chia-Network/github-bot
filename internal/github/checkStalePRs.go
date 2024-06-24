@@ -50,7 +50,7 @@ func CheckStalePRs(ctx context.Context, githubClient *github.Client, cfg *config
 				continue // Skip this PR or handle the error appropriately
 			}
 			if stale {
-				slogs.Logr.Info("PR is has no team member within the last seven days", "PR", pr.GetNumber(), "repository", fullRepo.Name, "user", pr.User.GetLogin(), "created_at", pr.CreatedAt)
+				slogs.Logr.Info("PR has no team member activity within the last seven days", "PR", pr.GetNumber(), "repository", fullRepo.Name, "user", pr.User.GetLogin(), "created_at", pr.CreatedAt)
 				stalePRs = append(stalePRs, StalePR{
 					Repo:     repo,
 					PRNumber: pr.GetNumber(),
