@@ -136,7 +136,7 @@ func checkTeamMemberActivity(ctx context.Context, client *github.Client, owner, 
 	}
 
 	for _, comment := range comments {
-		slogs.Logr.Info("Checking comment by team member", "user", comment.User.GetLogin(), "created_at", comment.CreatedAt.Format(time.RFC3339), "PR", prNumber, "repository", repo)
+		slogs.Logr.Info("Checking comment by:", "user", comment.User.GetLogin(), "created_at", comment.CreatedAt.Format(time.RFC3339), "PR", prNumber, "repository", repo)
 		if _, ok := teamMembers[comment.User.GetLogin()]; ok && comment.CreatedAt.After(lastCommitTime) {
 			slogs.Logr.Info("Found team member comment after last commit time", "time", comment.CreatedAt.Format(time.RFC3339), "PR", prNumber, "repository", repo)
 			// Check if the comment is after the last commit
