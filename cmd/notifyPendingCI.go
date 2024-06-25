@@ -90,6 +90,7 @@ var notifyPendingCICmd = &cobra.Command{
 					slogs.Logr.Info("Sending message via keybase")
 					if err := keybase.SendKeybaseMsg(message); err != nil {
 						slogs.Logr.Error("Failed to send message", "error", err)
+						time.Sleep(15 * time.Second) // This is to prevent "error response: 429 Too Many Requests""
 					} else {
 						slogs.Logr.Info("Message sent for PR", "URL", pr.URL)
 					}
