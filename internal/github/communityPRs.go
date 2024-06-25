@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/chia-network/go-modules/pkg/slogs"
 	"github.com/google/go-github/v60/github"
 
 	"github.com/chia-network/github-bot/internal/config"
@@ -37,7 +38,10 @@ func FindCommunityPRs(cfg *config.Config, teamMembers map[string]bool, githubCli
 			}
 			user := *pullRequest.User.Login
 			if !teamMembers[user] && !cfg.SkipUsersMap[user] {
+				slogs.Logr.Info("Pull request meets criteria, adding to final list", "PR", pullRequest.GetHTMLURL(), "user", user)
 				finalPRs = append(finalPRs, pullRequest)
+			} else {
+				slogs.Logr.Info("Pull request does not meet criteria, skipping", "PR", pullRequest.GetHTMLURL(), "user", user)
 			}
 		}
 
