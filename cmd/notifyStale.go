@@ -83,10 +83,11 @@ var notifyStaleCmd = &cobra.Command{
 				}
 
 				if shouldSendMessage {
-					message := fmt.Sprintf("The following pull request is waiting for approval for CI checks to run: %s", pr.URL)
+					message := fmt.Sprintf("The following pull request has no activity from a Chia team member in the last 7 days: %s", pr.URL)
 					slogs.Logr.Info("Sending message via keybase")
 					if err := keybase.SendKeybaseMsg(message); err != nil {
 						slogs.Logr.Error("Failed to send message", "error", err)
+						time.Sleep(15 * time.Second) // This is to prevent "error response: 429 Too Many Requests""
 					} else {
 						slogs.Logr.Info("Message sent for PR", "URL", pr.URL)
 					}
