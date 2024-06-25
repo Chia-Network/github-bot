@@ -40,9 +40,11 @@ func CheckForPendingCI(ctx context.Context, githubClient *github.Client, cfg *co
 		}
 
 		for _, pr := range communityPRs {
+			slogs.Logr.Info("Checking PR", "PR", pr.GetHTMLURL())
 			prctx, prcancel := context.WithTimeout(ctx, 30*time.Second) // 30 seconds timeout for each request
 			defer prcancel()
 			// Dynamic cutoff time based on the last commit to the PR
+			slogs.Logr.Info("Fetching last commit time", "PR", pr.GetHTMLURL())
 			lastCommitTime, err := getLastCommitTime(prctx, githubClient, owner, repo, pr.GetNumber())
 			if err != nil {
 				slogs.Logr.Error("Error retrieving last commit time", "PR", pr.GetNumber(), "repository", fullRepo.Name, "error", err)
@@ -55,18 +57,21 @@ func CheckForPendingCI(ctx context.Context, githubClient *github.Client, cfg *co
 				continue
 			}
 
+			slogs.Logr.Info("Checking CI status for PR", "PR", pr.GetHTMLURL())
 			hasCIRuns, err := checkCIStatus(prctx, githubClient, owner, repo, pr.GetNumber())
 			if err != nil {
 				slogs.Logr.Error("Error checking CI status", "PR", pr.GetNumber(), "repository", fullRepo.Name, "error", err)
 				continue
 			}
 
+			slogs.Logr.Info("Checking team member activity for PR", "PR", pr.GetHTMLURL())
 			teamMemberActivity, err := checkTeamMemberActivity(prctx, githubClient, owner, repo, pr.GetNumber(), teamMembers, lastCommitTime)
 			if err != nil {
 				slogs.Logr.Error("Error checking team member activity", "PR", pr.GetNumber(), "repository", fullRepo.Name, "error", err)
 				continue // or handle the error as needed
 			}
 
+			slogs.Logr.Info("Evaluating PR", "PR", pr.GetHTMLURL(), "hasCIRuns", hasCIRuns, "teamMemberActivity", teamMemberActivity)
 			if !hasCIRuns && !teamMemberActivity {
 				slogs.Logr.Info("PR is ready for CI and no CI actions have started yet, or it requires re-approval", "PR", pr.GetNumber(), "repository", fullRepo.Name, "user", pr.User.GetLogin(), "created_at", pr.CreatedAt)
 				pendingPRs = append(pendingPRs, PendingPR{

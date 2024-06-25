@@ -43,7 +43,7 @@ func CheckStalePRs(ctx context.Context, githubClient *github.Client, cfg *config
 
 		for _, pr := range communityPRs {
 			repoName := pr.GetBase().GetRepo().GetFullName() // Get the full name of the repository
-			slogs.Logr.Info("Checking PR", "PR", pr.GetHTMLURL())
+			slogs.Logr.Info("Checking if PR is stale", "PR", pr.GetHTMLURL())
 			stale, err := isStale(ctx, githubClient, pr, teamMembers, cutoffDate) // Handle both returned values
 			if err != nil {
 				slogs.Logr.Error("Error checking if PR is stale", "repository", repoName, "error", err)
