@@ -83,7 +83,7 @@ var notifyStaleCmd = &cobra.Command{
 				}
 
 				if shouldSendMessage {
-					message := fmt.Sprintf("The following pull request has activity from a Chia team member in the last 7 days: %s", pr.URL)
+					message := fmt.Sprintf("The following pull request has no activity from a Chia team member in the last 7 days: %s", pr.URL)
 					slogs.Logr.Info("Sending message via keybase")
 					if err := keybase.SendKeybaseMsg(message); err != nil {
 						slogs.Logr.Error("Failed to send message", "error", err)
