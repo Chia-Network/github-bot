@@ -73,7 +73,7 @@ func CheckForPendingCI(ctx context.Context, githubClient *github.Client, cfg *co
 
 			slogs.Logr.Info("Evaluating PR", "PR", pr.GetHTMLURL(), "hasCIRuns", hasCIRuns, "teamMemberActivity", teamMemberActivity)
 			if !hasCIRuns && !teamMemberActivity {
-				slogs.Logr.Info("PR is ready for CI and no CI actions have started yet, or it requires re-approval", "PR", pr.GetNumber(), "repository", fullRepo.Name, "user", pr.User.GetLogin(), "created_at", pr.CreatedAt)
+				slogs.Logr.Info("PR is ready for CI checks approval or has failing runs", "PR", pr.GetNumber(), "repository", fullRepo.Name, "user", pr.User.GetLogin(), "created_at", pr.CreatedAt)
 				pendingPRs = append(pendingPRs, PendingPR{
 					Repo:     repo,
 					PRNumber: pr.GetNumber(),
@@ -120,18 +120,18 @@ func checkCIStatus(ctx context.Context, client *github.Client, owner, repo strin
 	// Obtaining CI runs for the most recent commit
 	commitSHA := pr.GetHead().GetSHA()
 
-	checks, _, err := client.Checks.ListCheckRunsForRef(ctx, owner, repo, commitSHA, &github.ListCheckRunsOptions{})
+	checkStatus, _, err := client.Repositories.GetCombinedStatus(ctx, owner, repo, commitSHA, nil)
 	if err != nil {
-		return false, fmt.Errorf("failed to fetch check runs for ref %s: %w", commitSHA, err)
+		return false, fmt.Errorf("failed to fetch combined status for ref %s: %w", commitSHA, err)
 	}
-	// Potentially add logic later for checking for passing CI
-	/*
-		for _, checkRun := range checks.CheckRuns {
-		if checkRun.GetStatus() != "completed" || checkRun.GetConclusion() != "success" {
-			return false, nil // There are check runs that are not completed or not successful
-		}
-	*/
-	return checks.GetTotal() > 0, nil
+
+	// Check if the combined status state is pending or failing
+	state := checkStatus.GetState()
+	if state == "pending" || state == "failure" {
+		return false, nil // There are pending or failing statuses on the PR
+	}
+
+	return true, nil // No pending or failing statuses found on the PR
 }
 
 func checkTeamMemberActivity(ctx context.Context, client *github.Client, owner, repo string, prNumber int, teamMembers map[string]bool, lastCommitTime time.Time) (bool, error) {

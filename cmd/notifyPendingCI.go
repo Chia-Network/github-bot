@@ -86,7 +86,7 @@ var notifyPendingCICmd = &cobra.Command{
 				}
 
 				if shouldSendMessage {
-					message := fmt.Sprintf("The following pull request is waiting for approval for CI checks to run: %s", pr.URL)
+					message := fmt.Sprintf("The following pull request is either waiting for approval for CI checks to run or has failed checks: %s", pr.URL)
 					slogs.Logr.Info("Sending message via keybase")
 					if err := keybase.SendKeybaseMsg(message); err != nil {
 						slogs.Logr.Error("Failed to send message", "error", err)

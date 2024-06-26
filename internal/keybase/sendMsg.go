@@ -2,18 +2,12 @@ package keybase
 
 import (
 	"bytes"
-	"encoding/json"
 	"fmt"
 	"net/http"
 	"os"
 
 	"github.com/chia-network/go-modules/pkg/slogs"
 )
-
-// WebhookMessage represents the message to be sent to the Keybase webhook.
-type WebhookMessage struct {
-	Message string `json:"message"`
-}
 
 // SendKeybaseMsg sends a message to a specified Keybase channel
 func SendKeybaseMsg(message string) error {
@@ -22,15 +16,7 @@ func SendKeybaseMsg(message string) error {
 		return fmt.Errorf("KEYBASE_WEBHOOK_URL environment variable is not set")
 	}
 
-	payload := WebhookMessage{
-		Message: message,
-	}
-	payloadBytes, err := json.Marshal(payload)
-	if err != nil {
-		slogs.Logr.Error("Error converting data to a JSON string", "error", err)
-	}
-
-	resp, err := http.Post(webhookURL, "application/json", bytes.NewBuffer(payloadBytes))
+	resp, err := http.Post(webhookURL, "text/plain", bytes.NewBufferString(message))
 	if err != nil {
 		slogs.Logr.Error("Error sending message", "error", err)
 		return err
