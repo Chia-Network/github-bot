@@ -34,3 +34,15 @@ secretEnvironment:
   GITHUB_BOT_DB_PASS: "{{ DB_PASS }}"
   GITHUB_BOT_DB_NAME: "github-bot"
   KEYBASE_WEBHOOK_URL: "{{ KEYBASE_WEBHOOK_URL }}"
+
+networkPolicy:
+  enabled: true
+  policyTypes:
+    - Egress
+  egressRules:
+    - to:
+        - ipBlock:
+            cidr: "{{ DB_HOST }}/32"
+      ports:
+        - protocol: TCP
+          port: 3306
