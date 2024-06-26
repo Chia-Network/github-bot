@@ -30,3 +30,15 @@ secretFile:
         - "dependabot[bot]"
         - "github-actions[bot]"
         - "socket-security[bot]"
+
+networkPolicy:
+  enabled: true
+  policyTypes:
+    - Egress
+  egressRules:
+    - to:
+        - ipBlock:
+            cidr: "{{ DB_HOST }}/32"
+      ports:
+        - protocol: TCP
+          port: 3306
