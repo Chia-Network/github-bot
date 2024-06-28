@@ -17,6 +17,7 @@ type WebhookMessage struct {
 	Description string `json:"description"`
 }
 
+// NewMessage creates and returns an instance of the WebhookMessage struct
 func NewMessage(status string, title string, description string) WebhookMessage {
 	return WebhookMessage{
 		Status:      status,
