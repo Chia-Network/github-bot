@@ -2,7 +2,6 @@ package cmd
 
 import (
 	"context"
-	"fmt"
 	"time"
 
 	"github.com/google/go-github/v60/github"
@@ -86,9 +85,9 @@ var notifyPendingCICmd = &cobra.Command{
 				}
 
 				if shouldSendMessage {
-					status := ":rotating_light:"
-					title := "Pending/Failed Checks"
-					description := fmt.Sprintf("The following pull request is either waiting for approval for CI checks to run or has failed checks: %s", pr.URL)
+					status := "firing"
+					title := "The following pull request is either waiting for approval for CI checks to run or has failed checks:"
+					description := pr.URL
 					slogs.Logr.Info("Sending message via keybase")
 					message := keybase.NewMessage(status, title, description)
 					if err := message.SendKeybaseMsg(); err != nil {

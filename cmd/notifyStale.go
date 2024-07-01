@@ -2,7 +2,6 @@ package cmd
 
 import (
 	"context"
-	"fmt"
 	"time"
 
 	"github.com/google/go-github/v60/github"
@@ -83,9 +82,9 @@ var notifyStaleCmd = &cobra.Command{
 				}
 
 				if shouldSendMessage {
-					status := ":rotating_light:"
-					title := "Stale PR Checks"
-					description := fmt.Sprintf("The following pull request has no activity from a Chia team member in the last 7 days: %s", pr.URL)
+					status := "firing"
+					title := "The following pull request has no activity from a Chia team member in the last 7 days:"
+					description := pr.URL
 					slogs.Logr.Info("Sending message via keybase")
 					message := keybase.NewMessage(status, title, description)
 					if err := message.SendKeybaseMsg(); err != nil {
