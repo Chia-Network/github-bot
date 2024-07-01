@@ -2,7 +2,6 @@ package cmd
 
 import (
 	"context"
-	"fmt"
 	"time"
 
 	"github.com/google/go-github/v60/github"
@@ -86,9 +85,12 @@ var notifyPendingCICmd = &cobra.Command{
 				}
 
 				if shouldSendMessage {
-					message := fmt.Sprintf("The following pull request is either waiting for approval for CI checks to run or has failed checks: %s", pr.URL)
+					status := "firing"
+					title := "The following pull request is either waiting for approval for CI checks to run or has failed checks:"
+					description := pr.URL
 					slogs.Logr.Info("Sending message via keybase")
-					if err := keybase.SendKeybaseMsg(message); err != nil {
+					message := keybase.NewMessage(status, title, description)
+					if err := message.SendKeybaseMsg(); err != nil {
 						slogs.Logr.Error("Failed to send message", "error", err)
 						time.Sleep(15 * time.Second) // This is to prevent "error response: 429 Too Many Requests""
 					} else {
