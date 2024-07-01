@@ -28,7 +28,7 @@ type WebhookMessage struct {
 }
 
 // NewMessage creates and returns an instance of the WebhookMessage struct
-func NewMessage(status string, title string, description string) WebhookMessage {
+func NewMessage(status, title, description string) WebhookMessage {
 	alert := Alert{
 		Status: status,
 		Annotations: Annotation{
@@ -50,12 +50,13 @@ func (msg *WebhookMessage) SendKeybaseMsg() error {
 
 	authToken := os.Getenv("WEBHOOK_AUTH_SECRET_TOKEN")
 	if authToken == "" {
-		return fmt.Errorf("AUTH_TOKEN environment variable is not set")
+		return fmt.Errorf("WEBHOOK_AUTH_SECRET_TOKEN environment variable is not set")
 	}
 
 	payload, err := json.Marshal(msg)
 	if err != nil {
-		slogs.Logr.Error("Error converting string to json", "error", err)
+		slogs.Logr.Error("Error converting message to JSON", "error", err)
+		return err
 	}
 
 	client := &http.Client{}
@@ -72,12 +73,11 @@ func (msg *WebhookMessage) SendKeybaseMsg() error {
 		slogs.Logr.Error("Error sending message", "error", err)
 		return err
 	}
+	defer resp.Body.Close()
 
-	if resp.StatusCode == http.StatusOK {
-		slogs.Logr.Info("Message successfully sent")
-		return nil
-	} else {
-
+	if resp.StatusCode != http.StatusOK {
+		slogs.Logr.Error("Received error response", "status", resp.Status)
+		return fmt.Errorf("received error response: %s", resp.Status)
 	}
 
 	slogs.Logr.Info("Message successfully sent")
