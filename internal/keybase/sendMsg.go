@@ -28,6 +28,12 @@ type WebhookMessage struct {
 	Alerts []Alert `json:"alerts"`
 }
 
+var client *http.Client
+
+func init() {
+	client = &http.Client{}
+}
+
 // NewMessage creates and returns an instance of the WebhookMessage struct
 func NewMessage(status, title, description string) WebhookMessage {
 	alert := Alert{
@@ -60,10 +66,9 @@ func (msg *WebhookMessage) SendKeybaseMsg() error {
 		return err
 	}
 
-	client := &http.Client{}
 	req, err := http.NewRequest("POST", webhookURL, bytes.NewBuffer(payload))
 	if err != nil {
-		slogs.Logr.Error("Error creating HTTP request", "error", err)
+		slogs.Logr.Error("Error creating webhook HTTP request", "error", err)
 		return err
 	}
 	req.Header.Set("Content-Type", "application/json")
@@ -77,12 +82,12 @@ func (msg *WebhookMessage) SendKeybaseMsg() error {
 	defer func(Body io.ReadCloser) {
 		err := Body.Close()
 		if err != nil {
-			slogs.Logr.Error("Error closing body")
+			slogs.Logr.Error("Error closing keybase webhook response body")
 		}
 	}(resp.Body)
 
 	if resp.StatusCode != http.StatusOK {
-		slogs.Logr.Error("Received error response", "status", resp.Status)
+		slogs.Logr.Error("Keybase webhook returned error", "status", resp.Status)
 		return fmt.Errorf("received error response: %s", resp.Status)
 	}
 
