@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"io"
 	"net/http"
 	"os"
 
@@ -73,7 +74,12 @@ func (msg *WebhookMessage) SendKeybaseMsg() error {
 		slogs.Logr.Error("Error sending message", "error", err)
 		return err
 	}
-	defer resp.Body.Close()
+	defer func(Body io.ReadCloser) {
+		err := Body.Close()
+		if err != nil {
+			slogs.Logr.Error("Error closing body")
+		}
+	}(resp.Body)
 
 	if resp.StatusCode != http.StatusOK {
 		slogs.Logr.Error("Received error response", "status", resp.Status)
