@@ -82,8 +82,8 @@ var notifyStaleCmd = &cobra.Command{
 				}
 
 				if shouldSendMessage {
-					status := "firing"
-					title := "The following pull request has no activity from a Chia team member in the last 7 days:"
+					status := "message"
+					title := "The following pull request has no activity from a Chia team member in the last 7 days"
 					description := pr.URL
 					slogs.Logr.Info("Sending message via keybase")
 					message := keybase.NewMessage(status, title, description)

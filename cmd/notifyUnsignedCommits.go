@@ -85,8 +85,8 @@ var notifyUnsignedCommitsCmd = &cobra.Command{
 				}
 
 				if shouldSendMessage {
-					status := "firing"
-					title := "The following pull request is either waiting for approval for CI checks to run or has failed checks:"
+					status := "message"
+					title := "The following pull request has unsigned commits"
 					description := pr.URL
 					slogs.Logr.Info("Sending message via keybase")
 					message := keybase.NewMessage(status, title, description)

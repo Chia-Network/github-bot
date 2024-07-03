@@ -84,7 +84,7 @@ func isUnsigned(ctx context.Context, githubClient *github.Client, pr *github.Pul
 				continue
 			}
 			verification := commit.Commit.Verification
-			if verification == nil || *verification.Verified == false {
+			if verification == nil || !*verification.Verified {
 				return true, nil
 			}
 		}
