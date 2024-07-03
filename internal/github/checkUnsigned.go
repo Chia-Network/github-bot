@@ -12,7 +12,7 @@ import (
 	"github.com/chia-network/github-bot/internal/config"
 )
 
-// UnsignedPR holds information about pending PRs
+// UnsignedPRs holds information about pending PRs
 type UnsignedPRs struct {
 	Repo     string
 	PRNumber int
