@@ -43,7 +43,7 @@ func CheckUnsignedCommits(ctx context.Context, githubClient *github.Client, cfg 
 		for _, pr := range communityPRs {
 			repoName := pr.GetBase().GetRepo().GetFullName() // Get the full name of the repository
 			slogs.Logr.Info("Checking if PR has unsigned commits", "PR", pr.GetHTMLURL())
-			unsigned, err := isUnsigned(ctx, githubClient, pr, teamMembers) // Handle both returned values
+			unsigned, err := hasUnsignedCommits(ctx, githubClient, pr, teamMembers) // Handle both returned values
 			if err != nil {
 				slogs.Logr.Error("Error checking if PR has unsigned commits", "repository", repoName, "error", err)
 				continue // Skip this PR or handle the error appropriately
@@ -67,7 +67,7 @@ func CheckUnsignedCommits(ctx context.Context, githubClient *github.Client, cfg 
 }
 
 // Checks if a PR has unsigned commits based on the last update from team members
-func isUnsigned(ctx context.Context, githubClient *github.Client, pr *github.PullRequest, teamMembers map[string]bool) (bool, error) {
+func hasUnsignedCommits(ctx context.Context, githubClient *github.Client, pr *github.PullRequest, teamMembers map[string]bool) (bool, error) {
 	listOptions := &github.ListOptions{PerPage: 100}
 	for {
 		// Create a context for each request

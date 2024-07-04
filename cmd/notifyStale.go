@@ -63,7 +63,7 @@ var notifyStaleCmd = &cobra.Command{
 				shouldSendMessage := false
 				if prInfo == nil {
 					// New PR, record it and send a message
-					slogs.Logr.Info("Storing data in db")
+					slogs.Logr.Info("Storing data in db", "repository", pr.Repo, "PR", int64(pr.PRNumber))
 					err := datastore.StorePRData(pr.Repo, int64(pr.PRNumber))
 					if err != nil {
 						slogs.Logr.Error("Error storing PR data", "error", err)
@@ -72,7 +72,7 @@ var notifyStaleCmd = &cobra.Command{
 					shouldSendMessage = true
 				} else if time.Since(prInfo.LastMessageSent) > sendMsgDuration {
 					// 24 hours has elapsed since the last message was issued, update the record and send a message
-					slogs.Logr.Info("Updating last_message_sent time in db")
+					slogs.Logr.Info("Updating last_message_sent time in db", "repository", pr.Repo, "PR", int64(pr.PRNumber))
 					err := datastore.StorePRData(pr.Repo, int64(pr.PRNumber))
 					if err != nil {
 						slogs.Logr.Error("Error updating PR data", "error", err)
@@ -85,7 +85,7 @@ var notifyStaleCmd = &cobra.Command{
 					status := "message"
 					title := "The following pull request has no activity from a Chia team member in the last 7 days"
 					description := pr.URL
-					slogs.Logr.Info("Sending message via keybase")
+					slogs.Logr.Info("Sending message via keybase for", "repository", pr.Repo, "PR", int64(pr.PRNumber))
 					message := keybase.NewMessage(status, title, description)
 					if err := message.SendKeybaseMsg(); err != nil {
 						slogs.Logr.Error("Failed to send message", "error", err)
