@@ -1,0 +1,45 @@
+replicaCount: 1
+image:
+  repository: ghcr.io/chia-network/github-bot
+  tag: {{ DOCKER_TAG }}
+
+deployment:
+  args:
+    - notify-unsigned
+    - --loop
+
+# Creates a secret with the following values, and mounts as a file into the main deployment container
+secretFile:
+  mountPath: "/config"
+  stringValues:
+    config.yml: |
+      github_token: "{{ BOT_GITHUB_TOKEN }}"
+      internal_team: "{{ INTERNAL_TEAM_NAME }}"
+      check_repos:
+        - name: "pmaslana/testing-bots"
+          minimum_number: 0
+      skip_users:
+        - "dependabot[bot]"
+        - "github-actions[bot]"
+        - "socket-security[bot]"
+
+
+secretEnvironment:
+  GITHUB_BOT_DB_HOST: "{{ DB_HOST }}"
+  GITHUB_BOT_DB_USER: "{{ DB_USER }}"
+  GITHUB_BOT_DB_PASS: "{{ DB_PASS }}"
+  GITHUB_BOT_DB_NAME: "github-bot"
+  KEYBASE_WEBHOOK_URL: "{{ KEYBASE_WEBHOOK_URL }}"
+  WEBHOOK_AUTH_SECRET_TOKEN: "{{ WEBHOOK_AUTH_SECRET_TOKEN }}"
+
+networkPolicy:
+  enabled: true
+  policyTypes:
+    - Egress
+  egressRules:
+    - to:
+        - ipBlock:
+            cidr: "{{ DB_HOST }}/32"
+      ports:
+        - protocol: TCP
+          port: 3306

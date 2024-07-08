@@ -16,9 +16,9 @@ import (
 	"github.com/chia-network/go-modules/pkg/slogs"
 )
 
-var notifyStaleCmd = &cobra.Command{
-	Use:   "notify-stale",
-	Short: "Sends a Keybase message to a channel, alerting that a community PR has not been updated in 7 days",
+var notifyUnsignedCommitsCmd = &cobra.Command{
+	Use:   "notify-unsigned",
+	Short: "Sends a Keybase message to a channel, alerting of unsigned commits",
 	Run: func(cmd *cobra.Command, args []string) {
 		slogs.Init("info")
 		cfg, err := config.LoadConfig(viper.GetString("config"))
@@ -33,22 +33,25 @@ var notifyStaleCmd = &cobra.Command{
 			viper.GetString("db-user"),
 			viper.GetString("db-pass"),
 			viper.GetString("db-name"),
-			"stale_pr_status",
+			"unsignedcommits",
 		)
 
 		if err != nil {
 			slogs.Logr.Error("Could not initialize mysql connection", "error", err)
 			return
 		}
+
 		loop := viper.GetBool("loop")
 		loopDuration := viper.GetDuration("loop-time")
-		sendMsgDuration := 24 * time.Hour // Define the sendMsgDuration
 		ctx := context.Background()
+
+		sendMsgDuration := 24 * time.Hour
+
 		for {
-			slogs.Logr.Info("Checking for community PRs that have no update in the last 7 days")
-			listPendingPRs, err := github2.CheckStalePRs(ctx, client, cfg)
+			slogs.Logr.Info("Checking for community PRs that are waiting for CI to run")
+			listPendingPRs, err := github2.CheckUnsignedCommits(ctx, client, cfg)
 			if err != nil {
-				slogs.Logr.Error("Error checking PR info in database", "error", err)
+				slogs.Logr.Error("Error obtaining a list of pending PRs", "error", err)
 				time.Sleep(loopDuration)
 				continue
 			}
@@ -83,7 +86,7 @@ var notifyStaleCmd = &cobra.Command{
 
 				if shouldSendMessage {
 					status := "message"
-					title := "The following pull request has no activity from a Chia team member in the last 7 days"
+					title := "The following pull request has unsigned commits"
 					description := pr.URL
 					slogs.Logr.Info("Sending message via keybase for", "repository", pr.Repo, "PR", int64(pr.PRNumber))
 					message := keybase.NewMessage(status, title, description)
@@ -99,7 +102,6 @@ var notifyStaleCmd = &cobra.Command{
 			if !loop {
 				break
 			}
-
 			slogs.Logr.Info("Waiting for next iteration", "duration", loopDuration.String())
 			time.Sleep(loopDuration)
 		}
@@ -107,5 +109,5 @@ var notifyStaleCmd = &cobra.Command{
 }
 
 func init() {
-	rootCmd.AddCommand(notifyStaleCmd)
+	rootCmd.AddCommand(notifyUnsignedCommitsCmd)
 }
