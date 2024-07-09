@@ -94,6 +94,32 @@ func (d *Datastore) initTables() error {
 		return err
 	}
 
+	// List of required columns
+	requiredColumns := map[string]string{
+		"suppress_messages": "BOOLEAN NOT NULL DEFAULT FALSE",
+		// Add other columns here as needed
+	}
+
+	// Check for missing columns and add them if necessary
+	for column, definition := range requiredColumns {
+		var columnName string
+		query := fmt.Sprintf("SHOW COLUMNS FROM `%s` LIKE '%s'", d.tableName, column)
+		err := d.mysqlClient.QueryRow(query).Scan(&columnName, new(string), new(string), new(string), new(string), new(string))
+		if err != nil {
+			if err == sql.ErrNoRows {
+				// Column does not exist, add it
+				alterQuery := fmt.Sprintf("ALTER TABLE `%s` ADD COLUMN `%s` %s", d.tableName, column, definition)
+				_, err := d.mysqlClient.Exec(alterQuery)
+				if err != nil {
+					return fmt.Errorf("error adding column %s: %v", column, err)
+				}
+				slogs.Logr.Info("Added column to table", "table", d.tableName, "column", column)
+			} else {
+				return fmt.Errorf("error checking column %s: %v", column, err)
+			}
+		}
+	}
+
 	return nil
 }
 

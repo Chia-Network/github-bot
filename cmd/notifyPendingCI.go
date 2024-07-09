@@ -63,6 +63,11 @@ var notifyPendingCICmd = &cobra.Command{
 					continue
 				}
 
+				if prInfo != nil && prInfo.SuppressMessages {
+					slogs.Logr.Info("Skipping message for PR due to suppress_messages flag", "repository", pr.Repo, "PR", int64(pr.PRNumber))
+					continue
+				}
+
 				shouldSendMessage := false
 				if prInfo == nil {
 					// New PR, record it and send a message
