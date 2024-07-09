@@ -6,15 +6,46 @@ import (
 	"strings"
 	"time"
 
+	"github.com/chia-network/go-modules/pkg/slogs"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
+
+	"github.com/chia-network/github-bot/internal/database"
 )
 
 // rootCmd represents the base command when called without any subcommands
 var rootCmd = &cobra.Command{
 	Use:   "github-bot",
 	Short: "GitHub Bot is our do-it-all bot to help manage GitHub",
-	// Run: func(cmd *cobra.Command, args []string) { },
+	Run: func(cmd *cobra.Command, args []string) {
+		repo := viper.GetString("repo")
+		prNumber := viper.GetInt64("pr-number")
+		table := viper.GetString("table")
+		suppress := viper.GetBool("suppress")
+
+		datastore, err := database.NewDatastore(
+			viper.GetString("db-host"),
+			viper.GetUint16("db-port"),
+			viper.GetString("db-user"),
+			viper.GetString("db-pass"),
+			viper.GetString("db-name"),
+			table,
+		)
+		if err != nil {
+			slogs.Logr.Error("Could not initialize MySQL connection", "error", err)
+			return
+		}
+
+		err = datastore.UpdateSuppressMessages(repo, prNumber, suppress)
+		if err != nil {
+			slogs.Logr.Info("suppressing messages for", "repo", repo, "pr", prNumber)
+			if !suppress {
+				slogs.Logr.Info("unsuppressing messages for", "repo", repo, "pr", prNumber)
+			}
+			slogs.Logr.Error("Error messages for PR", "error", err)
+			return
+		}
+	},
 }
 
 // Execute adds all child commands to the root command and sets flags appropriately.
@@ -28,25 +59,33 @@ func Execute() {
 
 func init() {
 	var (
-		cfgFile  string
-		loop     bool
-		loopTime time.Duration
-		dbHost   string
-		dbPort   uint16
-		dbUser   string
-		dbPass   string
-		dbName   string
+		cfgFile   string
+		loop      bool
+		loopTime  time.Duration
+		suppress  bool
+		dbHost    string
+		dbPort    uint16
+		dbUser    string
+		dbPass    string
+		dbName    string
+		repo      string
+		prNumber  int64
+		tableName string
 	)
 
 	cobra.OnInitialize(initConfig)
 	rootCmd.PersistentFlags().StringVar(&cfgFile, "config", "config.yml", "config file to load")
 	rootCmd.PersistentFlags().BoolVar(&loop, "loop", false, "Use this var to periodically check on a loop")
 	rootCmd.PersistentFlags().DurationVar(&loopTime, "loop-time", 1*time.Hour, "The amount of time to wait between each iteration of the loop")
+	rootCmd.PersistentFlags().BoolVar(&suppress, "suppress-message", false, "Suppresses sending messages to keybase")
 	rootCmd.PersistentFlags().StringVar(&dbHost, "db-host", "127.0.0.1", "Hostname for MySQL")
 	rootCmd.PersistentFlags().Uint16Var(&dbPort, "db-port", 3306, "Port for MySQL")
 	rootCmd.PersistentFlags().StringVar(&dbUser, "db-user", "root", "User for MySQL")
 	rootCmd.PersistentFlags().StringVar(&dbPass, "db-pass", "root_password", "Password for MySQL")
 	rootCmd.PersistentFlags().StringVar(&dbName, "db-name", "github-bot", "Database name in MySQL")
+	rootCmd.PersistentFlags().StringVar(&repo, "repo", "", "Repository name")
+	rootCmd.PersistentFlags().Int64Var(&prNumber, "pr-number", 0, "PR number")
+	rootCmd.PersistentFlags().StringVar(&tableName, "table", "", "Database table name")
 
 	cobra.CheckErr(viper.BindPFlag("config", rootCmd.PersistentFlags().Lookup("config")))
 	cobra.CheckErr(viper.BindPFlag("loop", rootCmd.PersistentFlags().Lookup("loop")))
@@ -56,6 +95,9 @@ func init() {
 	cobra.CheckErr(viper.BindPFlag("db-user", rootCmd.PersistentFlags().Lookup("db-user")))
 	cobra.CheckErr(viper.BindPFlag("db-pass", rootCmd.PersistentFlags().Lookup("db-pass")))
 	cobra.CheckErr(viper.BindPFlag("db-name", rootCmd.PersistentFlags().Lookup("db-name")))
+	cobra.CheckErr(viper.BindPFlag("repo", rootCmd.PersistentFlags().Lookup("repo")))
+	cobra.CheckErr(viper.BindPFlag("pr-number", rootCmd.PersistentFlags().Lookup("pr-number")))
+	cobra.CheckErr(viper.BindPFlag("table", rootCmd.PersistentFlags().Lookup("table")))
 }
 
 // initConfig reads in config file and ENV variables if set.
