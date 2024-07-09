@@ -64,7 +64,7 @@ func initConfig() {
 	home, err := os.UserHomeDir()
 	cobra.CheckErr(err)
 
-	// Search config iqn home directory with name ".github-bot" (without extension).
+	// Search config in home directory with name ".github-bot" (without extension).
 	viper.AddConfigPath(home)
 	viper.SetConfigType("yaml")
 	viper.SetConfigName(".github-bot")
