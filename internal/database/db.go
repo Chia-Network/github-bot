@@ -5,14 +5,16 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/chia-network/go-modules/pkg/slogs"
 	"github.com/go-sql-driver/mysql"
 )
 
 // PRInfo struct holds the PR information
 type PRInfo struct {
-	Repo            string
-	PRNumber        int64
-	LastMessageSent time.Time
+	Repo             string
+	PRNumber         int64
+	LastMessageSent  time.Time
+	SuppressMessages bool
 }
 
 // Datastore manages connections and the state of the database.
@@ -82,6 +84,7 @@ func (d *Datastore) initTables() error {
 		"  `repo` VARCHAR(255) NOT NULL,"+
 		"  `pr_number` bigint NOT NULL,"+
 		"  `last_message_sent` DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,"+
+		"  `suppress_messages` BOOLEAN NOT NULL DEFAULT FALSE,"+
 		"  PRIMARY KEY (`id`),"+
 		"  UNIQUE KEY `repo_pr_number_unique` (`repo`, `pr_number`)"+
 		") ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;", d.tableName)
@@ -89,6 +92,32 @@ func (d *Datastore) initTables() error {
 	_, err := d.mysqlClient.Exec(query)
 	if err != nil {
 		return err
+	}
+
+	// List of required columns
+	requiredColumns := map[string]string{
+		"suppress_messages": "BOOLEAN NOT NULL DEFAULT FALSE",
+		// Add other columns here as needed
+	}
+
+	// Check for missing columns and add them if necessary
+	for column, definition := range requiredColumns {
+		var columnName string
+		query := fmt.Sprintf("SHOW COLUMNS FROM `%s` LIKE '%s'", d.tableName, column)
+		err := d.mysqlClient.QueryRow(query).Scan(&columnName, new(string), new(string), new(string), new(string), new(string))
+		if err != nil {
+			if err == sql.ErrNoRows {
+				// Column does not exist, add it
+				alterQuery := fmt.Sprintf("ALTER TABLE `%s` ADD COLUMN `%s` %s", d.tableName, column, definition)
+				_, err := d.mysqlClient.Exec(alterQuery)
+				if err != nil {
+					return fmt.Errorf("error adding column %s: %v", column, err)
+				}
+				slogs.Logr.Info("Added column to table", "table", d.tableName, "column", column)
+			} else {
+				return fmt.Errorf("error checking column %s: %v", column, err)
+			}
+		}
 	}
 
 	return nil
@@ -131,6 +160,23 @@ func (d *Datastore) StorePRData(repo string, prNumber int64) error {
 	_, err := d.mysqlClient.Exec(query, repo, prNumber)
 	if err != nil {
 		return fmt.Errorf("error inserting or updating PR status: %v", err)
+	}
+
+	return nil
+}
+
+// UpdateSuppressMessages updates the suppress_messages flag for a PR.
+func (d *Datastore) UpdateSuppressMessages(repo string, prNumber int64, suppress bool) error {
+	query := fmt.Sprintf("UPDATE %s SET suppress_messages = ? WHERE repo = ? AND pr_number = ?", d.tableName)
+	_, err := d.mysqlClient.Exec(query, suppress, repo, prNumber)
+	if err != nil {
+		return fmt.Errorf("error updating suppress_messages: %v", err)
+	}
+
+	if suppress {
+		slogs.Logr.Info("Messages suppressed for PR", "repository", repo, "PR", prNumber)
+	} else {
+		slogs.Logr.Info("Messages unsuppressed for PR", "repository", repo, "PR", prNumber)
 	}
 
 	return nil
