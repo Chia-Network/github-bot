@@ -14,6 +14,7 @@ import (
 
 // UnsignedPRs holds information about pending PRs
 type UnsignedPRs struct {
+	Owner    string
 	Repo     string
 	PRNumber int
 	URL      string
@@ -51,10 +52,12 @@ func CheckUnsignedCommits(ctx context.Context, githubClient *github.Client, cfg 
 			if unsigned {
 				slogs.Logr.Info("PR has unsigned commits", "PR", pr.GetNumber(), "repository", fullRepo.Name, "user", pr.User.GetLogin(), "created_at", pr.CreatedAt)
 				unsignedPRs = append(unsignedPRs, UnsignedPRs{
+					Owner:    owner,
 					Repo:     repo,
 					PRNumber: pr.GetNumber(),
 					URL:      pr.GetHTMLURL(),
 				})
+
 			} else {
 				slogs.Logr.Info("No commits are unsigned",
 					"PR", pr.GetNumber(),

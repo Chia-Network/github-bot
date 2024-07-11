@@ -54,6 +54,7 @@ jobs:
             secret/data/fmt/mysql/users/github-bot password | DB_PASS;
             secret/data/alertmanager-receiver/okta-app client-secret | WEBHOOK_AUTH_SECRET_TOKEN;
             
+            
       - name: Login to k8s cluster
         uses: Chia-Network/actions/vault/k8s-login@main
         with:
