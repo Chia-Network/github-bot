@@ -91,7 +91,7 @@ var notifyPendingCICmd = &cobra.Command{
 
 				if shouldSendMessage {
 					status := "message"
-					title := "The following pull request is either waiting for approval for CI checks to run or has failed checks"
+					title := "The following pull request is either waiting for approval for CI checks to run"
 					description := pr.URL
 					slogs.Logr.Info("Sending message via keybase for", "repository", pr.Repo, "PR", int64(pr.PRNumber))
 					message := keybase.NewMessage(status, title, description)
