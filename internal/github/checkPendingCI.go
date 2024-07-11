@@ -127,7 +127,7 @@ func checkCIStatus(ctx context.Context, client *github.Client, owner, repo strin
 
 	// Check if the combined status state is pending or failing
 	state := checkStatus.GetState()
-	if state == "pending" || state == "failure" {
+	if state == "pending" {
 		return false, nil // There are pending or failing statuses on the PR
 	}
 
