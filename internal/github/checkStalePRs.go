@@ -3,6 +3,7 @@ package github
 import (
 	"context"
 	"fmt"
+	"log"
 	"strings"
 	"time"
 
@@ -73,21 +74,48 @@ func isStale(ctx context.Context, githubClient *github.Client, pr *github.PullRe
 	for {
 		// Create a context for each request
 		staleCtx, staleCancel := context.WithTimeout(ctx, 30*time.Second) // 30 seconds timeout for each request
-		defer staleCancel()
 		events, resp, err := githubClient.Issues.ListIssueTimeline(staleCtx, pr.Base.Repo.Owner.GetLogin(), pr.Base.Repo.GetName(), pr.GetNumber(), listOptions)
+		staleCancel() // Clean up the context at the end of the loop iteration
 		if err != nil {
 			slogs.Logr.Error("Failed to get timeline for PR", "PR", pr.GetNumber(), "repository", pr.Base.Repo.GetName(), "error", err)
 			return false, err
 		}
 		for _, event := range events {
-			if event.Event == nil || event.Actor == nil || event.Actor.Login == nil {
+			if event == nil || event.Event == nil || *event.Event == "" {
+				log.Println("Event or Event type is nil")
 				continue
 			}
-			if (*event.Event == "commented" || *event.Event == "reviewed") && teamMembers[*event.Actor.Login] && event.CreatedAt.After(cutoffDate) {
-				return false, nil
+
+			var userLogin *string
+
+			if event.Actor == nil && event.User == nil {
+				continue
+			}
+
+			if event.User != nil {
+				userLogin = event.User.Login
+				if userLogin == nil {
+					log.Println("User login is nil")
+				}
+			} else if event.Actor != nil {
+				userLogin = event.Actor.Login
+				if userLogin == nil {
+					log.Println("Actor login is nil")
+				}
+			}
+
+			if userLogin == nil {
+				continue
+			}
+			if event.User.Login != nil {
+				log.Printf("User Login: %s", *userLogin)
+			}
+
+			if (*event.Event == "commented" || *event.Event == "reviewed") && event.CreatedAt.After(cutoffDate) && teamMembers[*userLogin] {
+				return false, nil // Found a recent team member activity
 			}
 		}
-		staleCancel() // Clean up the context at the end of the loop iteration
+
 		if resp.NextPage == 0 {
 			break
 		}
