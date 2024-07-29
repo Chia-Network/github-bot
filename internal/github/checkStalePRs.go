@@ -3,7 +3,6 @@ package github
 import (
 	"context"
 	"fmt"
-	"log"
 	"strings"
 	"time"
 
@@ -82,36 +81,45 @@ func isStale(ctx context.Context, githubClient *github.Client, pr *github.PullRe
 		}
 		for _, event := range events {
 			if event == nil || event.Event == nil || *event.Event == "" {
-				log.Println("Event or Event type is nil")
+				if event.ID != nil {
+					slogs.Logr.Warn("Event or Event type is nil, cannot process event", "PR", pr.GetNumber(), "repository", pr.Base.Repo.GetName(), "event", *event.ID)
+				}
 				continue
 			}
-
-			var userLogin *string
-
 			if event.Actor == nil && event.User == nil {
+				if event.ID != nil {
+					slogs.Logr.Warn("Event Actor and Event User fields are both nil, cannot process event", "PR", pr.GetNumber(), "repository", pr.Base.Repo.GetName(), "event", *event.ID)
+				}
+				continue
+			}
+			if event.CreatedAt == nil && event.SubmittedAt == nil {
+				if event.ID != nil {
+					slogs.Logr.Warn("Event CreatedAt and Event SubmittedAt fields are both nil, cannot process event", "PR", pr.GetNumber(), "repository", pr.Base.Repo.GetName(), "event", *event.ID)
+				}
 				continue
 			}
 
+			// Gather user login information from event
+			var userLogin *string
 			if event.User != nil {
 				userLogin = event.User.Login
-				if userLogin == nil {
-					log.Println("User login is nil")
-				}
 			} else if event.Actor != nil {
 				userLogin = event.Actor.Login
-				if userLogin == nil {
-					log.Println("Actor login is nil")
-				}
 			}
-
+			// Check if userLogin equals nil because the User/Actor's Login field haven't been nilness checked
 			if userLogin == nil {
 				continue
 			}
-			if event.User.Login != nil {
-				log.Printf("User Login: %s", *userLogin)
+
+			// Gather event timestamp from event data
+			var eventTime github.Timestamp
+			if event.CreatedAt != nil {
+				eventTime = *event.CreatedAt
+			} else if event.SubmittedAt != nil {
+				eventTime = *event.SubmittedAt
 			}
 
-			if (*event.Event == "commented" || *event.Event == "reviewed") && event.CreatedAt.After(cutoffDate) && teamMembers[*userLogin] {
+			if (*event.Event == "commented" || *event.Event == "reviewed") && eventTime.After(cutoffDate) && teamMembers[*userLogin] {
 				return false, nil // Found a recent team member activity
 			}
 		}
