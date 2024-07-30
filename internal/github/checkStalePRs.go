@@ -70,28 +70,55 @@ func CheckStalePRs(ctx context.Context, githubClient *github.Client, cfg *config
 // Checks if a PR is stale based on the last update from team members
 func isStale(ctx context.Context, githubClient *github.Client, pr *github.PullRequest, teamMembers map[string]bool, cutoffDate time.Time) (bool, error) {
 	listOptions := &github.ListOptions{PerPage: 100}
+	if pr.GetCreatedAt().After(cutoffDate) {
+		slogs.Logr.Info("PR was created within the last seven days, so it cannot be stale", "PR", pr.GetNumber(), "repository", pr.Base.Repo.GetName())
+		return false, nil
+	}
 	for {
-		// Create a context for each request
-		staleCtx, staleCancel := context.WithTimeout(ctx, 30*time.Second) // 30 seconds timeout for each request
-		defer staleCancel()
+		staleCtx, staleCtxCancel := context.WithTimeout(ctx, 30*time.Second) // 30 seconds timeout for each request
 		events, resp, err := githubClient.Issues.ListIssueTimeline(staleCtx, pr.Base.Repo.Owner.GetLogin(), pr.Base.Repo.GetName(), pr.GetNumber(), listOptions)
+		staleCtxCancel()
 		if err != nil {
 			slogs.Logr.Error("Failed to get timeline for PR", "PR", pr.GetNumber(), "repository", pr.Base.Repo.GetName(), "error", err)
 			return false, err
 		}
 		for _, event := range events {
-			if event.Event == nil || event.Actor == nil || event.Actor.Login == nil {
+			if event.Event == nil || (*event.Event != "commented" && *event.Event != "reviewed") {
+				if event.ID != nil {
+					slogs.Logr.Warn("Event is neither of type COMMENTED or REVIEWED, or it might be nil. Cannot process event", "PR", pr.GetNumber(), "repository", pr.Base.Repo.GetName(), "event", *event.ID)
+				}
 				continue
 			}
-			if (*event.Event == "commented" || *event.Event == "reviewed") && teamMembers[*event.Actor.Login] && event.CreatedAt.After(cutoffDate) {
-				return false, nil
+			eventTime := getEventTime(event)
+			if eventTime != nil && (*eventTime).After(cutoffDate) {
+				userLogin := getUserLogin(event)
+				if userLogin != "" && teamMembers[userLogin] {
+					return false, nil // Found a recent team member activity
+				}
 			}
 		}
-		staleCancel() // Clean up the context at the end of the loop iteration
 		if resp.NextPage == 0 {
 			break
 		}
 		listOptions.Page = resp.NextPage
 	}
 	return true, nil
+}
+
+func getUserLogin(event *github.Timeline) string {
+	if event.User != nil && event.User.Login != nil {
+		return *event.User.Login
+	} else if event.Actor != nil && event.Actor.Login != nil {
+		return *event.Actor.Login
+	}
+	return ""
+}
+
+func getEventTime(event *github.Timeline) *github.Timestamp {
+	if event.CreatedAt != nil {
+		return event.CreatedAt
+	} else if event.SubmittedAt != nil {
+		return event.SubmittedAt
+	}
+	return nil // Return nil if no timestamp is available
 }
