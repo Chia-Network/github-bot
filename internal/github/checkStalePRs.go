@@ -71,7 +71,7 @@ func CheckStalePRs(ctx context.Context, githubClient *github.Client, cfg *config
 func isStale(ctx context.Context, githubClient *github.Client, pr *github.PullRequest, teamMembers map[string]bool, cutoffDate time.Time) (bool, error) {
 	listOptions := &github.ListOptions{PerPage: 100}
 	if pr.GetCreatedAt().After(cutoffDate) {
-		slogs.Logr.Info("PR was created within the last seven days")
+		slogs.Logr.Info("PR was created within the last seven days, so it cannot be stale", "PR", pr.GetNumber(), "repository", pr.Base.Repo.GetName())
 		return false, nil
 	}
 	for {
