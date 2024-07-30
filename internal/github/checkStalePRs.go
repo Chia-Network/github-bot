@@ -75,9 +75,9 @@ func isStale(ctx context.Context, githubClient *github.Client, pr *github.PullRe
 		return false, nil
 	}
 	for {
-		staleCtx, staleCancel := context.WithTimeout(ctx, 30*time.Second) // 30 seconds timeout for each request
+		staleCtx, staleCtxCancel := context.WithTimeout(ctx, 30*time.Second) // 30 seconds timeout for each request
 		events, resp, err := githubClient.Issues.ListIssueTimeline(staleCtx, pr.Base.Repo.Owner.GetLogin(), pr.Base.Repo.GetName(), pr.GetNumber(), listOptions)
-		staleCancel() // Clean up the context at the end of the loop iteration
+		staleCtxCancel()
 		if err != nil {
 			slogs.Logr.Error("Failed to get timeline for PR", "PR", pr.GetNumber(), "repository", pr.Base.Repo.GetName(), "error", err)
 			return false, err
