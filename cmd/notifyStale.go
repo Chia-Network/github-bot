@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"context"
+	"os"
 	"time"
 
 	"github.com/google/go-github/v60/github"
@@ -26,6 +27,10 @@ var notifyStaleCmd = &cobra.Command{
 			slogs.Logr.Fatal("Error loading config", "error", err)
 		}
 		client := github.NewClient(nil).WithAuthToken(cfg.GithubToken)
+		webhookURL := os.Getenv("KEYBASE_WEBHOOK_URL")
+		if webhookURL == "" {
+			slogs.Logr.Error("KEYBASE_WEBHOOK_URL environment variable is not set")
+		}
 
 		datastore, err := database.NewDatastore(
 			viper.GetString("db-host"),
@@ -92,7 +97,7 @@ var notifyStaleCmd = &cobra.Command{
 					description := pr.URL
 					slogs.Logr.Info("Sending message via keybase for", "repository", pr.Repo, "PR", int64(pr.PRNumber))
 					message := keybase.NewMessage(status, title, description)
-					if err := message.SendKeybaseMsg(); err != nil {
+					if err := message.SendKeybaseMsg(webhookURL); err != nil {
 						slogs.Logr.Error("Failed to send message", "error", err)
 						time.Sleep(15 * time.Second) // This is to prevent "error response: 429 Too Many Requests""
 					} else {

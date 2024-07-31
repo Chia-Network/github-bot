@@ -49,12 +49,7 @@ func NewMessage(status, title, description string) WebhookMessage {
 }
 
 // SendKeybaseMsg sends a message to a specified Keybase channel
-func (msg *WebhookMessage) SendKeybaseMsg() error {
-	webhookURL := os.Getenv("KEYBASE_WEBHOOK_URL")
-	if webhookURL == "" {
-		return fmt.Errorf("KEYBASE_WEBHOOK_URL environment variable is not set")
-	}
-
+func (msg *WebhookMessage) SendKeybaseMsg(webhookURL string) error {
 	authToken := os.Getenv("WEBHOOK_AUTH_SECRET_TOKEN")
 	if authToken == "" {
 		return fmt.Errorf("WEBHOOK_AUTH_SECRET_TOKEN environment variable is not set")
