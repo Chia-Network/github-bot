@@ -91,11 +91,11 @@ var notifyPendingCICmd = &cobra.Command{
 
 				if shouldSendMessage {
 					status := "message"
-					title := "The following pull request is either waiting for approval for CI checks to run"
+					title := "The following pull request is waiting for approval for CI checks to run"
 					description := pr.URL
 					slogs.Logr.Info("Sending message via keybase for", "repository", pr.Repo, "PR", int64(pr.PRNumber))
-					message := keybase.NewMessage(status, title, description)
-					if err := message.SendKeybaseMsg(); err != nil {
+					message := keybase.NewMessageTesting(status, title, description)
+					if err := message.SendKeybaseTestingMsg(); err != nil {
 						slogs.Logr.Error("Failed to send message", "error", err)
 						time.Sleep(15 * time.Second) // This is to prevent "error response: 429 Too Many Requests""
 					} else {

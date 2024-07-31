@@ -12,20 +12,20 @@ import (
 )
 
 // Annotation represents the annotations in the alert
-type Annotation struct {
+type TestingAnnotation struct {
 	Title       string `json:"title"`
 	Description string `json:"description"`
 }
 
 // Alert represents a single alert
-type Alert struct {
-	Status      string     `json:"status"`
-	Annotations Annotation `json:"annotations"`
+type TestingAlert struct {
+	Status      string            `json:"status"`
+	Annotations TestingAnnotation `json:"annotations"`
 }
 
-// WebhookMessage represents the message to be sent to the Keybase webhook
-type WebhookMessage struct {
-	Alerts []Alert `json:"alerts"`
+// TestingWebhookMessage represents the message to be sent to the Keybase webhook
+type TestingWebhookMessage struct {
+	Alerts []TestingAlert `json:"alerts"`
 }
 
 var client *http.Client
@@ -34,30 +34,25 @@ func init() {
 	client = &http.Client{}
 }
 
-// NewMessage creates and returns an instance of the WebhookMessage struct
-func NewMessage(status, title, description string) WebhookMessage {
-	alert := Alert{
+// NewMessageTesting creates and returns an instance of the WebhookMessage struct
+func NewMessageTesting(status, title, description string) TestingWebhookMessage {
+	alert := TestingAlert{
 		Status: status,
-		Annotations: Annotation{
+		Annotations: TestingAnnotation{
 			Title:       title,
 			Description: description,
 		},
 	}
-	return WebhookMessage{
-		Alerts: []Alert{alert},
+	return TestingWebhookMessage{
+		Alerts: []TestingAlert{alert},
 	}
 }
 
-// SendKeybaseMsg sends a message to a specified Keybase channel
-func (msg *WebhookMessage) SendKeybaseMsg() error {
-	webhookURL := os.Getenv("KEYBASE_WEBHOOK_URL")
+// SendKeybaseTestingMsg sends a message to a specified Keybase channel
+func (msg *TestingWebhookMessage) SendKeybaseTestingMsg() error {
+	webhookURL := os.Getenv("TESTING_KEYBASE_WEBHOOK_URL")
 	if webhookURL == "" {
 		return fmt.Errorf("KEYBASE_WEBHOOK_URL environment variable is not set")
-	}
-
-	authToken := os.Getenv("WEBHOOK_AUTH_SECRET_TOKEN")
-	if authToken == "" {
-		return fmt.Errorf("WEBHOOK_AUTH_SECRET_TOKEN environment variable is not set")
 	}
 
 	payload, err := json.Marshal(msg)
@@ -72,7 +67,6 @@ func (msg *WebhookMessage) SendKeybaseMsg() error {
 		return err
 	}
 	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", authToken))
 
 	resp, err := client.Do(req)
 	if err != nil {

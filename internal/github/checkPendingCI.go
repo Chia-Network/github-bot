@@ -58,7 +58,7 @@ func CheckForPendingCI(ctx context.Context, githubClient *github.Client, cfg *co
 			}
 
 			slogs.Logr.Info("Checking CI status for PR", "PR", pr.GetHTMLURL())
-			pendingCI, err := checkCIStatus(prctx, githubClient, owner, repo, pr.GetNumber())
+			pendingCI, err := hasPendingCI(prctx, githubClient, owner, repo, pr.GetNumber())
 			if err != nil {
 				slogs.Logr.Error("Error checking CI status", "PR", pr.GetNumber(), "repository", fullRepo.Name, "error", err)
 				continue
@@ -112,7 +112,7 @@ func getLastCommitTime(ctx context.Context, client *github.Client, owner, repo s
 	return *commitTime, nil // Safely dereference *time.Time to get time.Time
 }
 
-func checkCIStatus(ctx context.Context, client *github.Client, owner, repo string, prNumber int) (bool, error) {
+func hasPendingCI(ctx context.Context, client *github.Client, owner, repo string, prNumber int) (bool, error) {
 	pr, _, err := client.PullRequests.Get(ctx, owner, repo, prNumber)
 	if err != nil {
 		return false, fmt.Errorf("failed to fetch pull request #%d: %w", prNumber, err)
