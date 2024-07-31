@@ -23,6 +23,7 @@ var notifyUnsignedCommitsCmd = &cobra.Command{
 		if err != nil {
 			slogs.Logr.Fatal("Error loading config", "error", err)
 		}
+
 		client := github.NewClient(nil).WithAuthToken(cfg.GithubToken)
 
 		loop := viper.GetBool("loop")
@@ -40,10 +41,12 @@ var notifyUnsignedCommitsCmd = &cobra.Command{
 
 			for _, pr := range listPendingPRs {
 				err = github2.CheckAndComment(ctx, client, pr.Owner, pr.Repo, pr.PRNumber)
-				slogs.Logr.Info("Found PR with not signed commits", "PR", pr.URL)
 				if err != nil {
+					slogs.Logr.Error("Error commenting on PR", "error", err, "repository", pr.Repo, "PR", pr.PRNumber)
+					continue
 				}
 			}
+
 			if !loop {
 				break
 			}
