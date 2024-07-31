@@ -14,6 +14,7 @@ import (
 
 // UnsignedPRs holds information about pending PRs
 type UnsignedPRs struct {
+	Owner    string
 	Repo     string
 	PRNumber int
 	URL      string
@@ -51,10 +52,12 @@ func CheckUnsignedCommits(ctx context.Context, githubClient *github.Client, cfg 
 			if unsigned {
 				slogs.Logr.Info("PR has unsigned commits", "PR", pr.GetNumber(), "repository", fullRepo.Name, "user", pr.User.GetLogin(), "created_at", pr.CreatedAt)
 				unsignedPRs = append(unsignedPRs, UnsignedPRs{
+					Owner:    owner,
 					Repo:     repo,
 					PRNumber: pr.GetNumber(),
 					URL:      pr.GetHTMLURL(),
 				})
+
 			} else {
 				slogs.Logr.Info("No commits are unsigned",
 					"PR", pr.GetNumber(),
@@ -95,4 +98,34 @@ func hasUnsignedCommits(ctx context.Context, githubClient *github.Client, pr *gi
 		listOptions.Page = resp.NextPage
 	}
 	return true, nil
+}
+
+// CheckAndComment checks for the specific comment from a specific account and posts a comment if it doesn't exist.
+func CheckAndComment(ctx context.Context, client *github.Client, owner, repo string, prNumber int) error {
+	commentAuthor := "ChiaAutomation"
+	commentBody := "Your commits are not signed and our branch protection rules require signed commits. For more information on how to create signed commits, please visit this page: https://docs.chia.net/contribution/using-github/#setup-commit-signing. Please use the button towards the bottom of the page to close this pull request and open a new one with signed commits."
+	comments, _, err := client.Issues.ListComments(ctx, owner, repo, prNumber, nil)
+	if err != nil {
+		return fmt.Errorf("error fetching comments: %v", err)
+	}
+
+	// Check if the comment already exists
+	for _, comment := range comments {
+		if comment.GetUser().GetLogin() == commentAuthor && strings.EqualFold(comment.GetBody(), commentBody) {
+			slogs.Logr.Info("Unsigned commit comment already exists", "repo", repo, "PR", prNumber)
+			return nil
+		}
+	}
+
+	// Post the comment if it doesn't exist
+	comment := &github.IssueComment{
+		Body: github.String(commentBody),
+	}
+
+	_, _, err = client.Issues.CreateComment(ctx, owner, repo, prNumber, comment)
+	if err != nil {
+		return fmt.Errorf("error creating comment: %v", err)
+	}
+
+	return nil
 }

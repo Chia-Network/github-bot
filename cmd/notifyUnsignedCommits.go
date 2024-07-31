@@ -8,44 +8,27 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 
-	"github.com/chia-network/github-bot/internal/config"
-	"github.com/chia-network/github-bot/internal/database"
-	github2 "github.com/chia-network/github-bot/internal/github"
-	"github.com/chia-network/github-bot/internal/keybase"
-
 	"github.com/chia-network/go-modules/pkg/slogs"
+
+	"github.com/chia-network/github-bot/internal/config"
+	github2 "github.com/chia-network/github-bot/internal/github"
 )
 
 var notifyUnsignedCommitsCmd = &cobra.Command{
 	Use:   "notify-unsigned",
-	Short: "Sends a Keybase message to a channel, alerting of unsigned commits",
+	Short: "Provides a comment to the Pull Request author that unsigned commits are present",
 	Run: func(cmd *cobra.Command, args []string) {
 		slogs.Init("info")
 		cfg, err := config.LoadConfig(viper.GetString("config"))
 		if err != nil {
 			slogs.Logr.Fatal("Error loading config", "error", err)
 		}
+
 		client := github.NewClient(nil).WithAuthToken(cfg.GithubToken)
-
-		datastore, err := database.NewDatastore(
-			viper.GetString("db-host"),
-			viper.GetUint16("db-port"),
-			viper.GetString("db-user"),
-			viper.GetString("db-pass"),
-			viper.GetString("db-name"),
-			"unsignedcommits",
-		)
-
-		if err != nil {
-			slogs.Logr.Error("Could not initialize mysql connection", "error", err)
-			return
-		}
 
 		loop := viper.GetBool("loop")
 		loopDuration := viper.GetDuration("loop-time")
 		ctx := context.Background()
-
-		sendMsgDuration := 24 * time.Hour
 
 		for {
 			slogs.Logr.Info("Checking for community PRs that are waiting for CI to run")
@@ -57,51 +40,10 @@ var notifyUnsignedCommitsCmd = &cobra.Command{
 			}
 
 			for _, pr := range listPendingPRs {
-				prInfo, err := datastore.GetPRData(pr.Repo, int64(pr.PRNumber))
+				err = github2.CheckAndComment(ctx, client, pr.Owner, pr.Repo, pr.PRNumber)
 				if err != nil {
-					slogs.Logr.Error("Error checking PR info in database", "error", err)
+					slogs.Logr.Error("Error commenting on PR", "error", err, "repository", pr.Repo, "PR", pr.PRNumber)
 					continue
-				}
-
-				if prInfo != nil && prInfo.SuppressMessages {
-					slogs.Logr.Info("Skipping message for PR due to suppress_messages flag", "repository", pr.Repo, "PR", int64(pr.PRNumber))
-					continue
-				}
-
-				shouldSendMessage := false
-				if prInfo == nil {
-					// New PR, record it and send a message
-					slogs.Logr.Info("Storing data in db", "repository", pr.Repo, "PR", int64(pr.PRNumber))
-					err := datastore.StorePRData(pr.Repo, int64(pr.PRNumber))
-					if err != nil {
-						slogs.Logr.Error("Error storing PR data", "error", err)
-						continue
-					}
-					shouldSendMessage = true
-				} else if time.Since(prInfo.LastMessageSent) > sendMsgDuration {
-					// 24 hours has elapsed since the last message was issued, update the record and send a message
-					slogs.Logr.Info("Updating last_message_sent time in db", "repository", pr.Repo, "PR", int64(pr.PRNumber))
-					err := datastore.StorePRData(pr.Repo, int64(pr.PRNumber))
-					if err != nil {
-						slogs.Logr.Error("Error updating PR data", "error", err)
-						continue
-					}
-					shouldSendMessage = true
-				}
-
-				if shouldSendMessage {
-					status := "message"
-					title := "The following pull request has unsigned commits"
-					description := pr.URL
-					slogs.Logr.Info("Sending message via keybase for", "repository", pr.Repo, "PR", int64(pr.PRNumber))
-					message := keybase.NewMessage(status, title, description)
-					//TODO: This code will all be removed shortly, as we are not going to send messages to keybase.
-					if err := message.SendKeybaseMsg(""); err != nil {
-						slogs.Logr.Error("Failed to send message", "error", err)
-						time.Sleep(15 * time.Second) // This is to prevent "error response: 429 Too Many Requests""
-					} else {
-						slogs.Logr.Info("Message sent for PR", "URL", pr.URL)
-					}
 				}
 			}
 
