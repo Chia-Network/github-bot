@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"context"
+	"os"
 	"time"
 
 	"github.com/google/go-github/v60/github"
@@ -26,7 +27,10 @@ var notifyPendingCICmd = &cobra.Command{
 			slogs.Logr.Fatal("Error loading config", "error", err)
 		}
 		client := github.NewClient(nil).WithAuthToken(cfg.GithubToken)
-		webhookURL := "https://alert-receiver.chiaops.com/teambottesting"
+		webhookURL := os.Getenv("KEYBASE_WEBHOOK_URL")
+		if webhookURL == "" {
+			slogs.Logr.Error("KEYBASE_WEBHOOK_URL environment variable is not set")
+		}
 
 		datastore, err := database.NewDatastore(
 			viper.GetString("db-host"),
