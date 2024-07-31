@@ -58,7 +58,7 @@ func CheckForPendingCI(ctx context.Context, githubClient *github.Client, cfg *co
 			}
 
 			slogs.Logr.Info("Checking CI status for PR", "PR", pr.GetHTMLURL())
-			hasCIRuns, err := checkCIStatus(prctx, githubClient, owner, repo, pr.GetNumber())
+			pendingCI, err := checkCIStatus(prctx, githubClient, owner, repo, pr.GetNumber())
 			if err != nil {
 				slogs.Logr.Error("Error checking CI status", "PR", pr.GetNumber(), "repository", fullRepo.Name, "error", err)
 				continue
@@ -71,9 +71,9 @@ func CheckForPendingCI(ctx context.Context, githubClient *github.Client, cfg *co
 				continue // or handle the error as needed
 			}
 
-			slogs.Logr.Info("Evaluating PR", "PR", pr.GetHTMLURL(), "hasCIRuns", hasCIRuns, "teamMemberActivity", teamMemberActivity)
-			if !hasCIRuns && !teamMemberActivity {
-				slogs.Logr.Info("PR is ready for CI checks approval or has failing runs", "PR", pr.GetNumber(), "repository", fullRepo.Name, "user", pr.User.GetLogin(), "created_at", pr.CreatedAt)
+			slogs.Logr.Info("Evaluating PR", "PR", pr.GetHTMLURL(), "Action Required for CI", pendingCI, "teamMemberActivity", teamMemberActivity)
+			if pendingCI && !teamMemberActivity {
+				slogs.Logr.Info("PR is ready for CI checks approval", "PR", pr.GetNumber(), "repository", fullRepo.Name, "user", pr.User.GetLogin(), "created_at", pr.CreatedAt)
 				pendingPRs = append(pendingPRs, PendingPR{
 					Repo:     repo,
 					PRNumber: pr.GetNumber(),
@@ -117,21 +117,28 @@ func checkCIStatus(ctx context.Context, client *github.Client, owner, repo strin
 	if err != nil {
 		return false, fmt.Errorf("failed to fetch pull request #%d: %w", prNumber, err)
 	}
-	// Obtaining CI runs for the most recent commit
-	commitSHA := pr.GetHead().GetSHA()
 
-	checkStatus, _, err := client.Repositories.GetCombinedStatus(ctx, owner, repo, commitSHA, nil)
+	headSHA := pr.GetHead().GetSHA()
+
+	opts := &github.ListWorkflowRunsOptions{
+		Status:  "action_required",
+		HeadSHA: headSHA,
+	}
+	workflowRuns, _, err := client.Actions.ListRepositoryWorkflowRuns(ctx, owner, repo, opts)
 	if err != nil {
-		return false, fmt.Errorf("failed to fetch combined status for ref %s: %w", commitSHA, err)
+		return false, fmt.Errorf("failed to fetch workflow runs for repository %s/%s: %w", owner, repo, err)
 	}
 
-	// Check if the combined status state is pending or failing
-	state := checkStatus.GetState()
-	if state == "pending" {
-		return false, nil // There are pending or failing statuses on the PR
+	// Check for any workflows waiting for approval
+	for _, workflows := range workflowRuns.WorkflowRuns {
+		// This will check to see if there are any workflows that need approval and also ensure that its the same commit SHA as the PR we care about
+		if workflows.GetConclusion() == "action_required" && workflows.GetHeadSHA() == headSHA {
+			slogs.Logr.Info("Workflow awaiting approval for", "PR", prNumber, "repository", repo)
+			return true, nil
+		}
 	}
 
-	return true, nil // No pending or failing statuses found on the PR
+	return false, nil
 }
 
 func checkTeamMemberActivity(ctx context.Context, client *github.Client, owner, repo string, prNumber int, teamMembers map[string]bool, lastCommitTime time.Time) (bool, error) {
