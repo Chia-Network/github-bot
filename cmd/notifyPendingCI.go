@@ -26,6 +26,7 @@ var notifyPendingCICmd = &cobra.Command{
 			slogs.Logr.Fatal("Error loading config", "error", err)
 		}
 		client := github.NewClient(nil).WithAuthToken(cfg.GithubToken)
+		webhookURL := "https://alert-receiver.chiaops.com/teambottesting"
 
 		datastore, err := database.NewDatastore(
 			viper.GetString("db-host"),
@@ -94,8 +95,8 @@ var notifyPendingCICmd = &cobra.Command{
 					title := "The following pull request is waiting for approval for CI checks to run"
 					description := pr.URL
 					slogs.Logr.Info("Sending message via keybase for", "repository", pr.Repo, "PR", int64(pr.PRNumber))
-					message := keybase.NewMessageTesting(status, title, description)
-					if err := message.SendKeybaseTestingMsg(); err != nil {
+					message := keybase.NewMessage(status, title, description)
+					if err := message.SendKeybaseMsg(webhookURL); err != nil {
 						slogs.Logr.Error("Failed to send message", "error", err)
 						time.Sleep(15 * time.Second) // This is to prevent "error response: 429 Too Many Requests""
 					} else {
