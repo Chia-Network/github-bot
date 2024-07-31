@@ -28,10 +28,10 @@ type TestingWebhookMessage struct {
 	Alerts []TestingAlert `json:"alerts"`
 }
 
-var client *http.Client
+var clientTesting *http.Client
 
 func init() {
-	client = &http.Client{}
+	clientTesting = &http.Client{}
 }
 
 // NewMessageTesting creates and returns an instance of the WebhookMessage struct
@@ -68,7 +68,7 @@ func (msg *TestingWebhookMessage) SendKeybaseTestingMsg() error {
 	}
 	req.Header.Set("Content-Type", "application/json")
 
-	resp, err := client.Do(req)
+	resp, err := clientTesting.Do(req)
 	if err != nil {
 		slogs.Logr.Error("Error sending message", "error", err)
 		return err

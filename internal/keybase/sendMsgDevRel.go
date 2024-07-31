@@ -28,10 +28,10 @@ type WebhookMessage struct {
 	Alerts []Alert `json:"alerts"`
 }
 
-var clientTesting *http.Client
+var client *http.Client
 
 func init() {
-	clientTesting = &http.Client{}
+	client = &http.Client{}
 }
 
 // NewMessage creates and returns an instance of the WebhookMessage struct
@@ -74,7 +74,7 @@ func (msg *WebhookMessage) SendKeybaseMsg() error {
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", authToken))
 
-	resp, err := clientTesting.Do(req)
+	resp, err := client.Do(req)
 	if err != nil {
 		slogs.Logr.Error("Error sending message", "error", err)
 		return err
