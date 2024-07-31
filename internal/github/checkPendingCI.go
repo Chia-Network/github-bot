@@ -134,11 +134,11 @@ func checkCIStatus(ctx context.Context, client *github.Client, owner, repo strin
 		// This will check to see if there are any workflows that need approval and also ensure that its the same commit SHA as the PR we care about
 		if workflows.GetConclusion() == "action_required" && workflows.GetHeadSHA() == headSHA {
 			slogs.Logr.Info("Workflow awaiting approval for", "PR", prNumber, "repository", repo)
-			return true, nil // A workflow is awaiting approval
+			return true, nil
 		}
 	}
 
-	return false, nil // No workflows are awaiting approval
+	return false, nil
 }
 
 func checkTeamMemberActivity(ctx context.Context, client *github.Client, owner, repo string, prNumber int, teamMembers map[string]bool, lastCommitTime time.Time) (bool, error) {
