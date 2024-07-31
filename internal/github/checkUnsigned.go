@@ -112,7 +112,7 @@ func CheckAndComment(ctx context.Context, client *github.Client, owner, repo str
 	// Check if the comment already exists
 	for _, comment := range comments {
 		if comment.GetUser().GetLogin() == commentAuthor && strings.EqualFold(comment.GetBody(), commentBody) {
-			slogs.Logr.Info("Comment already exists", "repo", repo, "PR", prNumber)
+			slogs.Logr.Info("Unsigned commit comment already exists", "repo", repo, "PR", prNumber)
 			return nil
 		}
 	}
@@ -121,7 +121,7 @@ func CheckAndComment(ctx context.Context, client *github.Client, owner, repo str
 	comment := &github.IssueComment{
 		Body: github.String(commentBody),
 	}
-	slogs.Logr.Info("Comment", "comment", comment)
+
 	_, _, err = client.Issues.CreateComment(ctx, owner, repo, prNumber, comment)
 	if err != nil {
 		return fmt.Errorf("error creating comment: %v", err)
