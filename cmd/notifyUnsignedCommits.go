@@ -95,7 +95,8 @@ var notifyUnsignedCommitsCmd = &cobra.Command{
 					description := pr.URL
 					slogs.Logr.Info("Sending message via keybase for", "repository", pr.Repo, "PR", int64(pr.PRNumber))
 					message := keybase.NewMessage(status, title, description)
-					if err := message.SendKeybaseMsg(); err != nil {
+					//TODO: This code will all be removed shortly, as we are not going to send messages to keybase.
+					if err := message.SendKeybaseMsg(""); err != nil {
 						slogs.Logr.Error("Failed to send message", "error", err)
 						time.Sleep(15 * time.Second) // This is to prevent "error response: 429 Too Many Requests""
 					} else {
