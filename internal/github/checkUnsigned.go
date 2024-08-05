@@ -121,7 +121,7 @@ func CheckAndComment(ctx context.Context, client *github.Client, owner, repo str
 	comment := &github.IssueComment{
 		Body: github.String(commentBody),
 	}
-	//
+	slogs.Logr.Info("Creating comment for unsigned commits", "repo", repo, "PR", prNumber)
 	_, _, err = client.Issues.CreateComment(ctx, owner, repo, prNumber, comment)
 	if err != nil {
 		return fmt.Errorf("error creating comment: %v", err)
