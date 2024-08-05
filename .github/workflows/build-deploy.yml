@@ -31,6 +31,7 @@ jobs:
           - name: label-prs
           - name: notify-stale-prs
           - name: notify-pending-prs
+          - name: notify-unsigned
     steps:
       - uses: actions/checkout@v4
 
