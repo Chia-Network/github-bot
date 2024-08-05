@@ -16,8 +16,10 @@ secretFile:
       github_token: "{{ BOT_GITHUB_TOKEN }}"
       internal_team: "{{ INTERNAL_TEAM_NAME }}"
       check_repos:
-        - name: "pmaslana/testing-bots"
-          minimum_number: 0
+        - name: "Chia-Network/chia-blockchain"
+          minimum_number: 17788
+        - name: "Chia-Network/chia-blockchain-gui"
+          minimum_number: 2300
       skip_users:
         - "dependabot[bot]"
         - "github-actions[bot]"
