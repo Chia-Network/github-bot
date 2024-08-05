@@ -103,7 +103,7 @@ func hasUnsignedCommits(ctx context.Context, githubClient *github.Client, pr *gi
 // CheckAndComment checks for the specific comment from a specific account and posts a comment if it doesn't exist.
 func CheckAndComment(ctx context.Context, client *github.Client, owner, repo string, prNumber int) error {
 	commentAuthor := "ChiaAutomation"
-	commentBody := "Your commits are not signed and our branch protection rules require signed commits. For more information on how to create signed commits, please visit this page: https://docs.chia.net/contribution/using-github/#setup-commit-signing. Please use the button towards the bottom of the page to close this pull request and open a new one with signed commits."
+	commentBody := "Your commits are not signed and our branch protection rules require signed commits. For more information on how to create signed commits, please visit this page: https://docs.github.com/en/authentication/managing-commit-signature-verification/about-commit-signature-verification. Please use the button towards the bottom of the page to close this pull request and open a new one with signed commits."
 	comments, _, err := client.Issues.ListComments(ctx, owner, repo, prNumber, nil)
 	if err != nil {
 		return fmt.Errorf("error fetching comments: %v", err)
@@ -121,7 +121,7 @@ func CheckAndComment(ctx context.Context, client *github.Client, owner, repo str
 	comment := &github.IssueComment{
 		Body: github.String(commentBody),
 	}
-
+	//
 	_, _, err = client.Issues.CreateComment(ctx, owner, repo, prNumber, comment)
 	if err != nil {
 		return fmt.Errorf("error creating comment: %v", err)
