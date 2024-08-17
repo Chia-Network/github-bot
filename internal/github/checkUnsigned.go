@@ -97,7 +97,7 @@ func hasUnsignedCommits(ctx context.Context, githubClient *github.Client, pr *gi
 		}
 		listOptions.Page = resp.NextPage
 	}
-	return true, nil
+	return false, nil
 }
 
 // CheckAndComment checks for the specific comment from a specific account and posts a comment if it doesn't exist.
