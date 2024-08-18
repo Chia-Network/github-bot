@@ -87,8 +87,12 @@ func hasUnsignedCommits(ctx context.Context, githubClient *github.Client, pr *gi
 				continue
 			}
 			verification := commit.Commit.Verification
-			if verification == nil || !*verification.Verified {
-				return true, nil
+			if verification == nil {
+				slogs.Logr.Info("Commit has no verification field", "commit_sha", commit.GetSHA(), "author", commit.Commit.Author.GetName(), "email", commit.Commit.Author.GetEmail())
+				return true, nil // Log and flag if no verification field
+			} else if !*verification.Verified {
+				slogs.Logr.Info("Commit is not verified", "commit_sha", commit.GetSHA(), "author", commit.Commit.Author.GetName(), "email", commit.Commit.Author.GetEmail(), "reason", verification.GetReason())
+				return true, nil // Log and flag if the commit is not verified
 			}
 		}
 		unsignedCancel() // Clean up the context at the end of the loop iteration
