@@ -36,7 +36,7 @@ func CheckUnsignedCommits(ctx context.Context, githubClient *github.Client, cfg 
 		}
 		owner, repo := parts[0], parts[1]
 
-		communityPRs, err := FindCommunityPRs(cfg, teamMembers, githubClient, owner, repo, fullRepo.MinimumNumber)
+		communityPRs, err := FindAllPRs(cfg, teamMembers, githubClient, owner, repo, fullRepo.MinimumNumber)
 		if err != nil {
 			return nil, err
 		}

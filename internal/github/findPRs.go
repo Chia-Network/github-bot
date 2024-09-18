@@ -10,8 +10,18 @@ import (
 	"github.com/chia-network/github-bot/internal/config"
 )
 
-// FindCommunityPRs obtains PRs based on provided filters
+// FindCommunityPRs obtains PRs based on provided filters for community members
 func FindCommunityPRs(cfg *config.Config, teamMembers map[string]bool, githubClient *github.Client, owner string, repo string, minimumNumber int) ([]*github.PullRequest, error) {
+	return findPRs(cfg, teamMembers, githubClient, owner, repo, minimumNumber, true)
+}
+
+// FindAllPRs obtains all PRs for the repository
+func FindAllPRs(cfg *config.Config, teamMembers map[string]bool, githubClient *github.Client, owner string, repo string, minimumNumber int) ([]*github.PullRequest, error) {
+	return findPRs(cfg, teamMembers, githubClient, owner, repo, minimumNumber, false)
+}
+
+// findPRs handles fetching and filtering PRs based on community or all contributors
+func findPRs(cfg *config.Config, teamMembers map[string]bool, githubClient *github.Client, owner string, repo string, minimumNumber int, filterCommunity bool) ([]*github.PullRequest, error) {
 	var finalPRs []*github.PullRequest
 	opts := &github.PullRequestListOptions{
 		State:     "open",
@@ -36,13 +46,15 @@ func FindCommunityPRs(cfg *config.Config, teamMembers map[string]bool, githubCli
 			if *pullRequest.Draft {
 				continue
 			}
+
 			user := *pullRequest.User.Login
-			if !teamMembers[user] && !cfg.SkipUsersMap[user] {
-				slogs.Logr.Info("Pull request meets criteria, adding to final list", "PR", pullRequest.GetHTMLURL(), "user", user)
-				finalPRs = append(finalPRs, pullRequest)
-			} else {
+			if filterCommunity && (teamMembers[user] || cfg.SkipUsersMap[user]) {
 				slogs.Logr.Info("Pull request does not meet criteria, skipping", "PR", pullRequest.GetHTMLURL(), "user", user)
+				continue
 			}
+
+			slogs.Logr.Info("Pull request meets criteria, adding to final list", "PR", pullRequest.GetHTMLURL(), "user", user)
+			finalPRs = append(finalPRs, pullRequest)
 		}
 
 		if resp.NextPage == 0 {
@@ -50,5 +62,6 @@ func FindCommunityPRs(cfg *config.Config, teamMembers map[string]bool, githubCli
 		}
 		opts.Page = resp.NextPage // Set next page number
 	}
+
 	return finalPRs, nil
 }
