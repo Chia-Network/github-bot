@@ -49,6 +49,7 @@ func findPRs(cfg *config.Config, teamMembers map[string]bool, githubClient *gith
 
 			user := *pullRequest.User.Login
 			// If filtering community PRs, skip PRs by internal team members and users in SkipUsersMap
+			slogs.Logr.Debug("Checking user against skip list", "user", user, "skip list", cfg.SkipUsersMap)
 			if filterCommunity && (teamMembers[user] || cfg.SkipUsersMap[user]) {
 				slogs.Logr.Info("Pull request does not meet criteria, skipping", "PR", pullRequest.GetHTMLURL(), "user", user)
 				continue
