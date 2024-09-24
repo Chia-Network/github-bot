@@ -3,7 +3,7 @@ module github.com/chia-network/github-bot
 go 1.22.1
 
 require (
-	github.com/chia-network/go-modules v0.0.5
+	github.com/chia-network/go-modules v0.0.7
 	github.com/go-sql-driver/mysql v1.8.1
 	github.com/google/go-github/v60 v60.0.0
 	github.com/spf13/cobra v1.8.1
@@ -30,7 +30,7 @@ require (
 	github.com/subosito/gotenv v1.6.0 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
 	golang.org/x/exp v0.0.0-20240416160154-fe59bbe5cc7f // indirect
-	golang.org/x/sys v0.19.0 // indirect
+	golang.org/x/sys v0.22.0 // indirect
 	golang.org/x/text v0.14.0 // indirect
 	gopkg.in/check.v1 v1.0.0-20200227125254-8fa46927fb4f // indirect
 	gopkg.in/ini.v1 v1.67.0 // indirect
