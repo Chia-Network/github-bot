@@ -23,7 +23,7 @@ type UnsignedPRs struct {
 // CheckUnsignedCommits will return a list of PR URLs that have not been updated in the last 7 days by internal team members.
 func CheckUnsignedCommits(ctx context.Context, githubClient *github.Client, cfg *config.Config) ([]UnsignedPRs, error) {
 	var unsignedPRs []UnsignedPRs
-	teamMembers, err := GetTeamMemberList(githubClient, cfg.InternalTeam)
+	teamMembers, err := GetTeamMemberList(githubClient, cfg.InternalTeam, cfg.InternalTeamIgnoredUsers)
 	if err != nil {
 		return nil, err
 	}

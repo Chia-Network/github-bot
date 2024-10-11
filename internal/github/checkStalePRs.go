@@ -23,7 +23,7 @@ type StalePR struct {
 func CheckStalePRs(ctx context.Context, githubClient *github.Client, cfg *config.Config) ([]StalePR, error) {
 	var stalePRs []StalePR
 	cutoffDate := time.Now().Add(-7 * 24 * time.Hour) // 7 days ago
-	teamMembers, err := GetTeamMemberList(githubClient, cfg.InternalTeam)
+	teamMembers, err := GetTeamMemberList(githubClient, cfg.InternalTeam, cfg.InternalTeamIgnoredUsers)
 	if err != nil {
 		return nil, err
 	}

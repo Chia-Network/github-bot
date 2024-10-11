@@ -21,7 +21,10 @@ type PendingPR struct {
 
 // CheckForPendingCI returns a list of PR URLs that are ready for CI to run but haven't started yet.
 func CheckForPendingCI(ctx context.Context, githubClient *github.Client, cfg *config.Config) ([]PendingPR, error) {
-	teamMembers, _ := GetTeamMemberList(githubClient, cfg.InternalTeam)
+	teamMembers, err := GetTeamMemberList(githubClient, cfg.InternalTeam, cfg.InternalTeamIgnoredUsers)
+	if err != nil {
+		return nil, err
+	}
 	var pendingPRs []PendingPR
 
 	for _, fullRepo := range cfg.CheckRepos {

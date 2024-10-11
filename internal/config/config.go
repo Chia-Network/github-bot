@@ -2,12 +2,13 @@ package config
 
 // Config defines the config for all aspects of the bot
 type Config struct {
-	GithubToken  string   `yaml:"github_token"`
-	InternalTeam string   `yaml:"internal_team"`
-	SkipUsers    []string `yaml:"skip_users"`
-	SkipUsersMap map[string]bool
-	LabelConfig  `yaml:",inline"`
-	CheckRepos   []CheckRepo `yaml:"check_repos"`
+	GithubToken              string   `yaml:"github_token"`
+	InternalTeam             string   `yaml:"internal_team"`
+	InternalTeamIgnoredUsers []string `yaml:"internal_team_ignored_users"`
+	SkipUsers                []string `yaml:"skip_users"`
+	SkipUsersMap             map[string]bool
+	LabelConfig              `yaml:",inline"`
+	CheckRepos               []CheckRepo `yaml:"check_repos"`
 }
 
 // LabelConfig is the configuration options specific to labeling PRs

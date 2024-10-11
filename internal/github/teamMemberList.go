@@ -9,7 +9,7 @@ import (
 )
 
 // GetTeamMemberList obtains a list of teammembers
-func GetTeamMemberList(githubClient *github.Client, internalTeam string) (map[string]bool, error) {
+func GetTeamMemberList(githubClient *github.Client, internalTeam string, internalTeamIgnoredMembers []string) (map[string]bool, error) {
 	teamMembers := make(map[string]bool)
 
 	teamParts := strings.Split(internalTeam, "/")
@@ -33,7 +33,19 @@ func GetTeamMemberList(githubClient *github.Client, internalTeam string) (map[st
 		}
 
 		for _, member := range members {
-			teamMembers[*member.Login] = true
+			shouldIgnoreMember := false
+			for _, ignoredMember := range internalTeamIgnoredMembers {
+				if member.Login != nil {
+					if strings.EqualFold(ignoredMember, *member.Login) {
+						shouldIgnoreMember = true
+						break
+					}
+				}
+			}
+
+			if member.Login != nil && !shouldIgnoreMember {
+				teamMembers[*member.Login] = true
+			}
 		}
 
 		if resp.NextPage == 0 {
