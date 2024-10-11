@@ -83,9 +83,9 @@ func isStale(ctx context.Context, githubClient *github.Client, pr *github.PullRe
 			return false, err
 		}
 		for _, event := range events {
-			if event.Event == nil || (*event.Event != "commented" && *event.Event != "reviewed") {
+			if event.Event == nil {
 				if event.ID != nil {
-					slogs.Logr.Warn("Event is neither of type COMMENTED or REVIEWED, or it might be nil. Cannot process event", "PR", pr.GetNumber(), "repository", pr.Base.Repo.GetName(), "event", *event.ID)
+					slogs.Logr.Warn("Event does not specify any of the known event types, nil event type. Cannot process event", "PR", pr.GetNumber(), "repository", pr.Base.Repo.GetName(), "event", *event.ID)
 				}
 				continue
 			}
