@@ -33,18 +33,18 @@ func GetTeamMemberList(githubClient *github.Client, internalTeam string, interna
 		}
 
 		for _, member := range members {
-			shouldIgnoreMember := false
-			for _, ignoredMember := range internalTeamIgnoredMembers {
-				if member.Login != nil {
+			if member.Login != nil {
+				shouldIgnoreMember := false
+				for _, ignoredMember := range internalTeamIgnoredMembers {
 					if strings.EqualFold(ignoredMember, *member.Login) {
 						shouldIgnoreMember = true
 						break
 					}
 				}
-			}
 
-			if member.Login != nil && !shouldIgnoreMember {
-				teamMembers[*member.Login] = true
+				if !shouldIgnoreMember {
+					teamMembers[*member.Login] = true
+				}
 			}
 		}
 
