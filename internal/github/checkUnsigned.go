@@ -158,7 +158,7 @@ func checkAndRemoveComment(ctx context.Context, client *github.Client, owner, re
 				"pr_number", prNumber)
 			_, err := client.Issues.DeleteComment(ctx, owner, repo, commentID)
 			if err != nil {
-				return fmt.Errorf("error deleting comment %d: %v", commentID, err)
+				return fmt.Errorf("error deleting comment %d: %w", commentID, err)
 			}
 			slogs.Logr.Info("Successfully removed unsigned commit comment",
 				"comment_id", commentID,
