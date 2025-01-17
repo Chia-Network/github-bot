@@ -12,6 +12,11 @@ import (
 	"github.com/chia-network/github-bot/internal/config"
 )
 
+const (
+	automationBotName     = "ChiaAutomation"
+	unsignedCommitMessage = "Your commits are not signed and our branch protection rules require signed commits. For more information on how to create signed commits, please visit this page: https://docs.github.com/en/authentication/managing-commit-signature-verification/about-commit-signature-verification. Please use the button towards the bottom of the page to close this pull request and open a new one with signed commits."
+)
+
 // UnsignedPRs holds information about pending PRs
 type UnsignedPRs struct {
 	Owner    string
@@ -62,6 +67,11 @@ func CheckUnsignedCommits(ctx context.Context, githubClient *github.Client, cfg 
 				slogs.Logr.Info("No commits are unsigned",
 					"PR", pr.GetNumber(),
 					"repository", fullRepo.Name)
+				err = checkAndRemoveComment(ctx, githubClient, owner, repo, pr.GetNumber())
+				if err != nil {
+					slogs.Logr.Error("Error checking and removing comment", "repository", repoName, "error", err)
+					return nil, err
+				}
 			}
 		}
 	}
@@ -106,8 +116,6 @@ func hasUnsignedCommits(ctx context.Context, githubClient *github.Client, pr *gi
 
 // CheckAndComment checks for the specific comment from a specific account and posts a comment if it doesn't exist.
 func CheckAndComment(ctx context.Context, client *github.Client, owner, repo string, prNumber int) error {
-	commentAuthor := "ChiaAutomation"
-	commentBody := "Your commits are not signed and our branch protection rules require signed commits. For more information on how to create signed commits, please visit this page: https://docs.github.com/en/authentication/managing-commit-signature-verification/about-commit-signature-verification. Please use the button towards the bottom of the page to close this pull request and open a new one with signed commits."
 	comments, _, err := client.Issues.ListComments(ctx, owner, repo, prNumber, nil)
 	if err != nil {
 		return fmt.Errorf("error fetching comments: %v", err)
@@ -115,7 +123,7 @@ func CheckAndComment(ctx context.Context, client *github.Client, owner, repo str
 
 	// Check if the comment already exists
 	for _, comment := range comments {
-		if comment.GetUser().GetLogin() == commentAuthor && strings.EqualFold(comment.GetBody(), commentBody) {
+		if comment.GetUser().GetLogin() == automationBotName && strings.EqualFold(comment.GetBody(), unsignedCommitMessage) {
 			slogs.Logr.Info("Unsigned commit comment already exists", "repo", repo, "PR", prNumber)
 			return nil
 		}
@@ -123,7 +131,7 @@ func CheckAndComment(ctx context.Context, client *github.Client, owner, repo str
 
 	// Post the comment if it doesn't exist
 	comment := &github.IssueComment{
-		Body: github.String(commentBody),
+		Body: github.String(unsignedCommitMessage),
 	}
 	slogs.Logr.Info("Creating comment for unsigned commits", "repo", repo, "PR", prNumber)
 	_, _, err = client.Issues.CreateComment(ctx, owner, repo, prNumber, comment)
@@ -131,5 +139,32 @@ func CheckAndComment(ctx context.Context, client *github.Client, owner, repo str
 		return fmt.Errorf("error creating comment: %v", err)
 	}
 
+	return nil
+}
+
+func checkAndRemoveComment(ctx context.Context, client *github.Client, owner, repo string, prNumber int) error {
+	comments, _, err := client.Issues.ListComments(ctx, owner, repo, prNumber, nil)
+	if err != nil {
+		return fmt.Errorf("error fetching comments: %v", err)
+	}
+
+	// Check if the comment exists
+	for _, comment := range comments {
+		if comment.GetUser().GetLogin() == automationBotName && strings.EqualFold(comment.GetBody(), unsignedCommitMessage) {
+			commentID := comment.GetID()
+			slogs.Logr.Info("Found unsigned commit comment to remove",
+				"comment_id", commentID,
+				"author", automationBotName,
+				"pr_number", prNumber)
+			_, err := client.Issues.DeleteComment(ctx, owner, repo, commentID)
+			if err != nil {
+				return fmt.Errorf("error deleting comment %d: %w", commentID, err)
+			}
+			slogs.Logr.Info("Successfully removed unsigned commit comment",
+				"comment_id", commentID,
+				"pr_number", prNumber)
+			return nil
+		}
+	}
 	return nil
 }
