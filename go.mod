@@ -4,7 +4,7 @@ go 1.22.1
 
 require (
 	github.com/chia-network/go-modules v0.0.8
-	github.com/go-sql-driver/mysql v1.9.0
+	github.com/go-sql-driver/mysql v1.9.1
 	github.com/google/go-github/v60 v60.0.0
 	github.com/spf13/cobra v1.9.1
 	github.com/spf13/viper v1.20.0
