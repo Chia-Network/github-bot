@@ -6,7 +6,7 @@ toolchain go1.24.1
 
 require (
 	github.com/chia-network/go-modules v0.0.9
-	github.com/go-sql-driver/mysql v1.9.2
+	github.com/go-sql-driver/mysql v1.9.3
 	github.com/google/go-github/v60 v60.0.0
 	github.com/spf13/cobra v1.9.1
 	github.com/spf13/viper v1.20.1
